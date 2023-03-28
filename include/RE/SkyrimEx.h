@@ -1,0 +1,17 @@
+#pragma once
+
+#include "RE/A/ActorEx.h"
+#include "RE/A/AnimationFileManager.h"
+#include "RE/C/CalendarEx.h"
+#include "RE/H/hkbAnimationBindingSet.h"
+#include "RE/H/hkbAssetBundleStringData.h"
+#include "RE/H/hkbCharacterControllerSetup.h"
+#include "RE/H/hkbCharacterData.h"
+#include "RE/H/hkbCharacterSetup.h"
+#include "RE/H/hkbCharacterStringData.h"
+#include "RE/H/hkbProjectData.h"
+#include "RE/H/hkbProjectStringData.h"
+#include "RE/H/hkbRigidBodySetup.h"
+#include "RE/H/hkbShapeSetup.h"
+#include "RE/H/hkFinishLoadedObjectFlag.h"
+#include "RE/M/MagicTargetEx.h"

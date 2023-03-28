@@ -2,11 +2,11 @@
 //                              DebugUtils.h
 // ----------------------------------------------------------------------------
 // Part of the open-source Dynamic Animation Replacer (DARGH).
-// 
+//
 // Copyright (c) 2023 Nox Sidereum
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the “Software”), to deal
+// of this software and associated documentation files (the ï¿½Softwareï¿½), to deal
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is furnished
@@ -15,21 +15,19 @@
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
 //
-// THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// THE SOFTWARE IS PROVIDED ï¿½AS ISï¿½, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 // AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
-// 
+//
 // (The MIT License)
 // ============================================================================
 #pragma once
-#include "RE/H/hkTypes.h"
 
-void initCriticalSection();
-void dumpBytes(char* ptr, int nbytes);
-void dumpHkArrayStringPtr(std::string header, hkArray stringPtrArray);
-void dumpHkArrayAssetBundle(std::string header, hkArray assetBundleArray);
-void dumpHkArrayFileNameMeshNamePair(std::string header, hkArray fileNameMeshNamePairArray);
+//void dumpBytes(char* a_ptr, int32_t a_nbytes);
+void dumpHkArrayStringPtr(std::string a_header, RE::hkArray<RE::hkStringPtr> a_strings);
+void dumpHkArrayAssetBundle(std::string a_header, RE::hkArray<RE::hkbAssetBundleStringData> a_bundles);
+void dumpHkArrayFileNameMeshNamePair(std::string a_header, RE::hkArray<RE::hkbCharacterStringData::FileNameMeshNamePair> a_pairs);

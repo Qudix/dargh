@@ -2,11 +2,11 @@
 //                            Conditions.cpp
 // ----------------------------------------------------------------------------
 // Part of the open-source Dynamic Animation Replacer (DARGH).
-// 
+//
 // Copyright (c) 2023 Nox Sidereum
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the “Software”), to deal
+// of this software and associated documentation files (the ï¿½Softwareï¿½), to deal
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is furnished
@@ -15,44 +15,22 @@
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
 //
-// THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// THE SOFTWARE IS PROVIDED ï¿½AS ISï¿½, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 // AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
-// 
+//
 // (The MIT License)
 // ============================================================================
+
 #include "Conditions.h"
 
-#include "RE/A/Actor.h"
-#include "RE/A/ActorValues.h"
-#include "RE/B/BGSLocation.h"
-#include "RE/B/BGSLocationRefType.h"
-#include "RE/B/BSExtraData.h"
-#include "RE/E/ExtraContainerChanges.h"
-#include "RE/E/ExtraDataTypes.h"
-#include "RE/E/ExtraLocationRefType.h"
-#include "RE/E/EffectSetting.h"
-#include "RE/F/FormTypes.h"
-#include "RE/M/MagicItem.h"
-#include "RE/S/Sky.h"
-#include "RE/T/TESFaction.h"
-#include "RE/T/TESGlobal.h"
-#include "RE/T/TESObjectCell.h"
-#include "RE/T/TESObjectWEAP.h"
-#include "RE/T/TESNPC.h"
-#include "RE/T/TESWeather.h"
-#include "RE/T/TESWorldSpace.h"
-#include "RE/Offsets.h"
+#include <numbers>
 
-#include <corecrt_math_defines.h>   // for M_PI constant
-#include <random>
-#include <variant>
-
-static double TWO_PI = 2.0 * M_PI;
+constexpr auto TWO_PI{ 2.0 * std::numbers::pi };
 
 // Turn this on if you want to trace & debug animation condition calls
 // (CAUTION: only use for debugging - this will generate large dargh.log files
@@ -60,63 +38,45 @@ static double TWO_PI = 2.0 * M_PI;
 // #define DEBUG_TRACE_CONDITIONS
 
 // ============================================================================
-//                        FUNCTION SIGNATURES
-// ============================================================================
-// Indirect function pointers, e.g. pointers to VFT addresses (so **)
-typedef TESObjectREFR*  (** _TESForm_AsReference2)(TESForm* form);
-typedef bool            (** _TESForm_IsFormTypeChild)(Actor* actor);
-typedef bool            (** _TESObjectREFR_HasKeywordHelper)(TESObjectREFR*, const BGSKeyword*);
-typedef bool            (** _Actor_IsInFaction)(Actor* actor, TESForm* faction);
-typedef bool            (** _Actor_HasKeyword)(Actor* actor, TESForm* keyword);
-typedef bool            (** _Actor_IsInCombat)(Actor* actor);
-typedef float           (** _ActorValueOwner_GetActorValue)(ActorValueOwner* owner, uint32_t a_akValue);
-typedef float           (** _ActorValueOwner_GetPermanentActorValue)(ActorValueOwner* owner, uint32_t a_akValue);
-typedef float           (** _ActorValueOwner_GetBaseActorValue)(ActorValueOwner* owner, uint32_t a_akValue);
-typedef bool            (** _BGSKeywordForm_HasKeyword)(BGSKeywordForm* kwForm, const BGSKeyword* keyword);
-typedef uint32_t        (** _BSExtraData_GetType)(BSExtraData* data);
-
-// ============================================================================
 //                          HELPER FUNCTIONS
 // ============================================================================
-static const BGSKeyword* g_kwWarhammer;
 
-bool readGlobalVars(float* values, std::variant<uint32_t, float>* args, uint32_t bmArgIsFloat, int nArgs)
+static const RE::BGSKeyword* g_kwWarhammer = nullptr;
+
+bool readGlobalVars(float* a_values, std::variant<uint32_t, float>* a_args, uint32_t a_bmArgIsFloat, int32_t a_nArgs)
 {
     // ---------------------------------------------------------------------------------------------
-    // Read 'nArgs' global variables or direct values (depending on whether the corresponding bit
-    // is set in 'bmArgIsFloat') from 'args' into 'values'. We expect that 'values' has sufficient
+    // Read 'a_nArgs' global variables or direct values (depending on whether the corresponding bit
+    // is set in 'a_bmArgIsFloat') from 'a_args' into 'a_values'. We expect that 'a_values' has sufficient
     // memory allocated.
     // ---------------------------------------------------------------------------------------------
     // Dereference the global variables as necessary (or store the direct values).
-    int powerOfTwo = 1;
-    for (int argIndex = 0; argIndex < nArgs; argIndex++)
-    {
-        if ((powerOfTwo & bmArgIsFloat) != 0)
-        {
+    int32_t powerOfTwo = 1;
+    for (int32_t i = 0; i < a_nArgs; i++) {
+        if ((powerOfTwo & a_bmArgIsFloat) != 0) {
             // Argument is a float.
-            values[argIndex] = std::get<float>(args[argIndex]);
-        }
-        else
-        {
+            a_values[i] = std::get<float>(a_args[i]);
+        } else {
             // Argument should be a global variable.
             // Dereference it and get its current value.
-            TESGlobal* form =
-                (TESGlobal*)RE::Game_GetForm(std::get<uint32_t>(args[argIndex]));
-            if (!form || form->form.formType != FormType::Global)
-            {
+            const auto formID = std::get<uint32_t>(a_args[i]);
+            const auto form = RE::TESForm::LookupByID<RE::TESGlobal>(formID);
+            if (!form)
                 return false;
-            }
-            values[argIndex] = form->value;
+
+            a_values[i] = form->value;
         }
+
         powerOfTwo *= 2;
     }
+
     return true;
 }
 
-int getEquippedFormType(TESForm* form)
+int32_t getEquippedFormType(RE::TESForm* a_form)
 {
     // From DAR documentation:
-    // 
+    //
     // "Item types are as follows.
     //   -1 = Others
     //    0 = Fists
@@ -138,35 +98,31 @@ int getEquippedFormType(TESForm* form)
     //    16 = Restoration Spells
     //    17 = Scrolls
     //    18 = Torches"
-    if (!form)
-    {
+    if (!a_form) {
         return 0;
     }
 
     // Spell form type
-    if (form->formType == FormType::Spell)
-    {
-        EffectSetting* pEffectSetting = ((MagicItem*)form)->avEffectSetting;
-        if (pEffectSetting)
-        {
-            ActorValue assocSkill = pEffectSetting->data.associatedSkill;
-            if (assocSkill == ActorValue::kAlteration) {
+    if (a_form->Is(RE::FormType::Spell)) {
+        if (const auto effect = a_form->As<RE::MagicItem>()->avEffectSetting) {
+            const auto skill = effect->GetMagickSkill();
+            if (skill == RE::ActorValue::kAlteration) {
                 // Alteration spells
                 return 12;
             }
-            if (assocSkill == ActorValue::kConjuration) {
+            if (skill == RE::ActorValue::kConjuration) {
                 // Conjuration spells
                 return 15;
             }
-            if (assocSkill == ActorValue::kDestruction) {
+            if (skill == RE::ActorValue::kDestruction) {
                 // Destruction spells
                 return 14;
             }
-            if (assocSkill == ActorValue::kIllusion) {
+            if (skill == RE::ActorValue::kIllusion) {
                 // Illusion spells
                 return 13;
             }
-            if (assocSkill == ActorValue::kRestoration) {
+            if (skill == RE::ActorValue::kRestoration) {
                 // Restoration spells
                 return 16;
             }
@@ -177,65 +133,52 @@ int getEquippedFormType(TESForm* form)
     }
 
     // Scroll form type
-    if (form->formType == FormType::Scroll)
-    {
+    if (a_form->Is(RE::FormType::Scroll)) {
         // Scrolls
         return 17;
     }
 
-    if (form->formType == FormType::Armor)
-    {
-        if ((*(uint64_t*)(form + 0x1B8) & 0x200) != 0)
-        {
+    if (a_form->Is(RE::FormType::Armor)) {
+        if ((*(uint64_t*)(a_form + 0x1B8) & 0x200) != 0) {
             // Shields
             return 11;
         }
-    }
-    else
-    {
-        if (form->formType == FormType::Light)
-        {
+    } else {
+        if (a_form->Is(RE::FormType::Light)) {
             // Torches
             return 18;
-        }
-        else
-        {
-            if (form->formType != FormType::Weapon)
-            {
+        } else {
+            if (!a_form->Is(RE::FormType::Weapon)) {
                 // Others
                 return -1;
             }
 
-            TESObjectWEAP* formWeap = (TESObjectWEAP*)form;
+            const auto weapon = a_form->As<RE::TESObjectWEAP>();
 
             // What type of weapon?
-            uint8_t animType = formWeap->weaponData.animationType;
-            if (animType >= WEAPON_TYPE::kTotal_WeapType)
-            {
+            auto animType = weapon->GetWeaponType();
+            if (animType > RE::WEAPON_TYPE::kCrossbow) {
                 // Not recognised - set to Others
                 return -1;
             }
-            if (animType != WEAPON_TYPE::kTwoHandAxe)
-            {
-                return animType;
+
+            if (animType != RE::WEAPON_TYPE::kTwoHandAxe) {
+                return static_cast<int32_t>(animType);
             }
 
             // The base form for warhammers
-            g_kwWarhammer = (const BGSKeyword*)RE::Game_GetForm(0x6D930);
+            if (!g_kwWarhammer)
+                g_kwWarhammer = RE::TESForm::LookupByID<RE::BGSKeyword>(0x6D930);
 
             // Have we got a reference to a warhammer?
             // Call the fourth function virtual function in BGSKeywordForm's VFT,
             // i.e. virtual bool HasKeyword(const BGSKeyword* a_keyword) const;  // 04
-            if ((*(_BGSKeywordForm_HasKeyword)(formWeap->keywordForm.pVFT + 0x20))
-                (&formWeap->keywordForm, g_kwWarhammer))
-            {
+            if (weapon->HasKeyword(g_kwWarhammer)) {
                 // Warhammers
                 return 10;
-            }
-            else
-            {
+            } else {
                 // No, so return 6 (two-handed axe)
-                return animType;
+                return static_cast<int32_t>(animType);
             }
         }
     }
@@ -244,860 +187,711 @@ int getEquippedFormType(TESForm* form)
     return -1;
 }
 
-bool hasKeyword(TESForm* form, const BGSKeyword* keyword)
+bool hasKeyword(RE::TESForm* a_form, const RE::BGSKeyword* a_keyword)
 {
-    BGSKeywordForm* keywordForm;
-    bool result = false;
-
-    switch (form->formType)
-    {
-    case Race:
-        keywordForm = (BGSKeywordForm*)((char*)form + 0x70);
-        break;
-    case MagicEffect:
-    case Enchantment:
-    case Spell:
-    case Scroll:
-    case Ingredient:
-    case AlchemyItem:
-        keywordForm = (BGSKeywordForm*)((char*)form + 0x40);
-        break;
-    case Activator:
-    case TalkingActivator:
-    case Flora:
-    case Furniture:
-        keywordForm = (BGSKeywordForm*)((char*)form + 0x90);
-        break;
-    case Armor:
-        keywordForm = (BGSKeywordForm*)((char*)form + 0x1D8);
-        break;
-    case Book:
-    case Ammo:
-        keywordForm = (BGSKeywordForm*)((char*)form + 0xF8);
-        break;
-    case Misc:
-    case Apparatus:
-    case KeyMaster:
-    case SoulGem:
-        keywordForm = (BGSKeywordForm*)((char*)form + 0xE8);
-        break;
-    case Weapon:
-        keywordForm = (BGSKeywordForm*)((char*)form + 0x140);
-        break;
-    case NPC:
-        keywordForm = (BGSKeywordForm*)((char*)form + 0x110);
-        break;
-    case Location:
-        keywordForm = (BGSKeywordForm*)((char*)form + 0x30);
-        break;
-    default:
-        keywordForm = 
-            (BGSKeywordForm*)RE::Runtime_DynamicCast
-            (form, 0, RE::RTTI_TESForm, RE::RTTI_BGSKeywordForm, 0);
-        break;
+    RE::BGSKeywordForm* keywordForm = nullptr;
+    switch (a_form->formType.get()) {
+        case RE::FormType::Race:
+            keywordForm = (RE::BGSKeywordForm*)((char*)a_form + 0x70);
+            break;
+        case RE::FormType::MagicEffect:
+        case RE::FormType::Enchantment:
+        case RE::FormType::Spell:
+        case RE::FormType::Scroll:
+        case RE::FormType::Ingredient:
+        case RE::FormType::AlchemyItem:
+            keywordForm = (RE::BGSKeywordForm*)((char*)a_form + 0x40);
+            break;
+        case RE::FormType::Activator:
+        case RE::FormType::TalkingActivator:
+        case RE::FormType::Flora:
+        case RE::FormType::Furniture:
+            keywordForm = (RE::BGSKeywordForm*)((char*)a_form + 0x90);
+            break;
+        case RE::FormType::Armor:
+            keywordForm = (RE::BGSKeywordForm*)((char*)a_form + 0x1D8);
+            break;
+        case RE::FormType::Book:
+        case RE::FormType::Ammo:
+            keywordForm = (RE::BGSKeywordForm*)((char*)a_form + 0xF8);
+            break;
+        case RE::FormType::Misc:
+        case RE::FormType::Apparatus:
+        case RE::FormType::KeyMaster:
+        case RE::FormType::SoulGem:
+            keywordForm = (RE::BGSKeywordForm*)((char*)a_form + 0xE8);
+            break;
+        case RE::FormType::Weapon:
+            keywordForm = (RE::BGSKeywordForm*)((char*)a_form + 0x140);
+            break;
+        case RE::FormType::NPC:
+            keywordForm = (RE::BGSKeywordForm*)((char*)a_form + 0x110);
+            break;
+        case RE::FormType::Location:
+            keywordForm = (RE::BGSKeywordForm*)((char*)a_form + 0x30);
+            break;
+        default:
+            keywordForm = skyrim_cast<RE::BGSKeywordForm*>(a_form);
+            break;
     }
-    if (keywordForm)
-    {
+
+    if (keywordForm) {
         // Call the fourth function virtual function in BGSKeywordForm's VFT,
         // i.e. virtual bool HasKeyword(const BGSKeyword* a_keyword) const;  // 04
-        result = 
-            (*(_BGSKeywordForm_HasKeyword)(keywordForm->pVFT + 0x20))
-            (keywordForm, keyword);
-    }
-    else
-    {
+        return keywordForm->HasKeyword(a_keyword);
+    } else {
         // Call the virtual function in TESForm's VFT at position 0x2C (== 0x160 / 0x8),
         // i.e. virtual const TESObjectREFR* AsReference2() const;   // 2C
-        TESObjectREFR *objRefr = 
-            (*(_TESForm_AsReference2)(form->pVft + 0x160))(form);
-        if (objRefr) 
-        {
+        if (const auto refr = a_form->AsReference()) {
             // Now call the virtual function in TESObjectREFR's VFT at position 0x40 (== 0x240 / 0x8)
             // i.e. virtual bool HasKeywordHelper(const BGSKeyword* a_keyword) const;  // 0x48
-            result = 
-                (*(_TESObjectREFR_HasKeywordHelper)(objRefr->form.pVft + 0x240))
-                (objRefr, keyword);
+            return refr->HasKeywordHelper(a_keyword);
         }
     }
-    return result;
+
+    return false;
 }
 
-bool hasKeywordBoundObj(TESBoundObject* obj, std::variant<uint32_t, float>* args)
+bool hasKeywordBoundObj(RE::TESBoundObject* a_obj, std::variant<uint32_t, float>* a_args)
 {
-    TESForm* form = (TESForm*)&obj->tesObj.form;
-    if (form)
-    {
-        BGSKeyword* keyword =
-            (BGSKeyword*)RE::Game_GetForm(std::get<uint32_t>(args[0]));
-        if (keyword)
-        {
-            if (keyword->form.formType == FormType::Keyword
-                && hasKeyword(form, keyword))
-            {
+    if (a_obj) {
+        const auto formID = std::get<uint32_t>(a_args[0]);
+        if (const auto keyword = RE::TESForm::LookupByID<RE::BGSKeyword>(formID)) {
+            if (hasKeyword(a_obj, keyword)) {
                 return true;
             }
         }
     }
+
     return false;
 }
 
-float getActorValPct(Actor* actor, uint32_t value)
+float getActorValPct(RE::Actor* a_actor, uint32_t a_value)
 {
-    float fActorValue =
-        (*(_ActorValueOwner_GetActorValue)(actor->actorValueOwner.pVFT + 8))
-        (&actor->actorValueOwner, value);
-    float fPermActorValue =
-        (*(_ActorValueOwner_GetPermanentActorValue)(actor->actorValueOwner.pVFT + 0x10))
-        (&actor->actorValueOwner, value);
-
-    if (fPermActorValue <= 0.0)
-    {
+    const auto owner = a_actor->AsActorValueOwner();
+    const float fActorValue = owner->GetActorValue(static_cast<RE::ActorValue>(a_value));
+    const float fPermActorValue = owner->GetPermanentActorValue(static_cast<RE::ActorValue>(a_value));
+    if (fPermActorValue <= 0.0) {
         return 1.0;
     }
-    if (fActorValue > 0.0)
-    {
-        if (fActorValue >= fPermActorValue)
-        {
+
+    if (fActorValue > 0.0) {
+        if (fActorValue >= fPermActorValue) {
             return 1.0;
         }
+
         return fActorValue / fPermActorValue;
     }
+
     return 0.0;
-}
-
-bool ExtraDataList_HasType(ExtraDataList* dataList, uint32_t extraDataType)
-{
-    // 'extraDataType' is of type ExtraDataType  (TODO: enforce this properly)
-    bool ret = false;
-    BSReadWriteLock* lock = &dataList->_lock;
-    RE::BSReadWriteLock_LockForRead(&dataList->_lock);
-    PresenceBitfield* presence = dataList->_extraData.presence;
-    if (presence)
-    {
-        ret = ((uint8_t)(1 << (extraDataType & 7)) & presence->bits[extraDataType >> 3]) != 0;
-    }
-    RE::BSReadWriteLock_UnlockRead(lock);
-    return ret;
-}
-
-BSExtraData* ExtraDataList_GetByTypeImpl(ExtraDataList* dataList, uint32_t extraDataType)
-{
-    // 'extraDataType' is of type ExtraDataType  (TODO: enforce this properly)
-    BSExtraData* data = NULL;
-    BSReadWriteLock* lock = &dataList->_lock;
-    RE::BSReadWriteLock_LockForRead(&dataList->_lock);
-    if (ExtraDataList_HasType(dataList, extraDataType)
-        && (data = dataList->_extraData.data) != NULL)
-    {
-        while ((*(_BSExtraData_GetType)(data->pVFT + 8))(data) != extraDataType)
-        {
-            data = data->next;
-            if (!data)
-            {
-                break;
-            }
-        }
-    }
-    RE::BSReadWriteLock_UnlockRead(lock);
-    return data;
 }
 
 // ============================================================================
 //                          CONDITION FUNCTIONS
 // ============================================================================
-bool IsEquippedRight(Actor* actor, std::variant<uint32_t, float>* args)
+bool IsEquippedRight(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args)
 {
     // -------------------------------------------------------------------
     // IsEquippedRight(Form item)
     // Does the actor have the specified item equipped to his right hand?
     // -------------------------------------------------------------------
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("IsEquippedRight(%08x)", args[0]);
+    logger::info("IsEquippedRight({:08X})", a_args[0]);
 #endif
-    AIProcess* currentProcess = actor->currentProcess;
-    if (currentProcess)
-    {
-        // 0 = left, 1 = right
-        TESForm* equippedFormRight = currentProcess->equippedObjects[1];
-        if (equippedFormRight)
-        {
-            if (equippedFormRight->formID == std::get<uint32_t>(args[0]))
-            {
+
+    if (const auto process = a_actor->GetActorRuntimeData().currentProcess) {
+        if (const auto equipped = process->GetEquippedRightHand()) {
+            const auto formID = std::get<uint32_t>(a_args[0]);
+            if (equipped->GetFormID() == formID) {
                 return true;
             }
         }
     }
+
     return false;
 }
 
-bool IsEquippedRightType(Actor* actor, std::variant<uint32_t, float>* args, uint32_t bmArgIsFloat)
+bool IsEquippedRightType(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args, uint32_t a_bmArgIsFloat)
 {
     // IsEquippedRightType(GlobalVariable type)
     // Is the item equipped to the actor's right hand the specified type?
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("IsEquippedRightType(%08x)", args[0]);
+    logger::info("IsEquippedRightType({:08X})", a_args[0]);
 #endif
-    float fArg0;
-    if (!readGlobalVars(&fArg0, args, bmArgIsFloat, 1))
-    {
+
+    float arg;
+    if (!readGlobalVars(&arg, a_args, a_bmArgIsFloat, 1)) {
         return false;
     }
-    AIProcess* currentProcess = actor->currentProcess;
-    TESForm* objEquipped = NULL;
-    if (currentProcess)
-    {
-        // 0 = left, 1 = right
-        objEquipped = currentProcess->equippedObjects[1];
+
+    if (const auto process = a_actor->GetActorRuntimeData().currentProcess) {
+        if (const auto equipped = process->GetEquippedRightHand()) {
+            return getEquippedFormType(equipped) == arg;
+        }
     }
-    int typeOfObjEquipped = getEquippedFormType(objEquipped);
-    return (typeOfObjEquipped == fArg0);
+
+    return false;
 }
 
-bool IsEquippedRightHasKeyword(Actor* actor, std::variant<uint32_t, float>* args)
+bool IsEquippedRightHasKeyword(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args)
 {
     // IsEquippedRightHasKeyword(Keyword keyword)
     // Does the item equipped to the actor's right hand have the specified keyword?
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("IsEquippedRightHasKeyword(%08x)", args[0]);
+    logger::info("IsEquippedRightHasKeyword({:08X})", a_args[0]);
 #endif
-    AIProcess* currentProcess = actor->currentProcess;
-    if (!currentProcess) 
-    {
-        return false;
+
+    if (const auto process = a_actor->GetActorRuntimeData().currentProcess) {
+        if (const auto equipped = process->GetEquippedRightHand()) {
+            const auto formID = std::get<uint32_t>(a_args[0]);
+            const auto keyword = RE::TESForm::LookupByID<RE::BGSKeyword>(formID);
+            return keyword && hasKeyword(equipped, keyword);
+        }
     }
-    // 0 = left, 1 = right
-    TESForm* equippedObj = currentProcess->equippedObjects[1];
-    if (!equippedObj)
-    {
-        return false;
-    }
-    BGSKeyword* keyword = 
-        (BGSKeyword*)RE::Game_GetForm(std::get<uint32_t>(args[0]));
-    return keyword 
-        && keyword->form.formType == Keyword
-        && hasKeyword(equippedObj, keyword);
+
+    return false;
 }
 
-bool IsEquippedLeft(Actor* actor, std::variant<uint32_t, float>* args)
+bool IsEquippedLeft(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args)
 {
     // IsEquippedLeft(Form item)
     // Does the actor have the specified item equipped to his left hand?
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("IsEquippedLeft(%08x)", args[0]);
+    logger::info("IsEquippedLeft({:08X})", a_args[0]);
 #endif
-    AIProcess* currentProcess = actor->currentProcess;
-    if (currentProcess)
-    {
-        // 0 = left, 1 = right
-        TESForm* equippedFormLeft = currentProcess->equippedObjects[0];
-        if (equippedFormLeft)
-        {
-            if (equippedFormLeft->formID == std::get<uint32_t>(args[0]))
-            {
+
+    if (const auto process = a_actor->GetActorRuntimeData().currentProcess) {
+        if (const auto equipped = process->GetEquippedLeftHand()) {
+            const auto formID = std::get<uint32_t>(a_args[0]);
+            if (equipped->GetFormID() == formID) {
                 return true;
             }
         }
     }
+
     return false;
 }
 
-bool IsEquippedLeftType(Actor* actor, std::variant<uint32_t, float>* args, uint32_t bmArgIsFloat)
+bool IsEquippedLeftType(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args, uint32_t a_bmArgIsFloat)
 {
     // IsEquippedLeftType(GlobalVariable type)
     // Is the item equipped to the actor's left hand the specified type?
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("IsEquippedLeftType(%08x)", args[0]);
+    logger::info("IsEquippedLeftType({:08X})", a_args[0]);
 #endif
-    float fArg0;
-    if (!readGlobalVars(&fArg0, args, bmArgIsFloat, 1))
-    {
+
+    float arg;
+    if (!readGlobalVars(&arg, a_args, a_bmArgIsFloat, 1)) {
         return false;
     }
-    AIProcess* currentProcess = actor->currentProcess;
-    TESForm* objEquipped = NULL;
-    if (currentProcess)
-    {
-        // 0 = left, 1 = right
-        objEquipped = currentProcess->equippedObjects[0];
+
+    if (const auto process = a_actor->GetActorRuntimeData().currentProcess) {
+        if (const auto equipped = process->GetEquippedLeftHand()) {
+            return getEquippedFormType(equipped) == arg;
+        }
     }
-    int typeOfObjEquipped = getEquippedFormType(objEquipped);
-    return (typeOfObjEquipped == fArg0);
+
+    return false;
 }
 
-bool IsEquippedLeftHasKeyword(Actor* actor, std::variant<uint32_t, float>* args)
+bool IsEquippedLeftHasKeyword(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args)
 {
     // IsEquippedLeftHasKeyword(Keyword keyword)
     // Does the item equipped to the actor's left hand have the specified keyword?
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("IsEquippedLeftHasKeyword(%08x)", args[0]);
+    logger::info("IsEquippedLeftHasKeyword({:08X})", a_args[0]);
 #endif
-    AIProcess* currentProcess = actor->currentProcess;
-    if (!currentProcess)
-    {
-        return false;
+
+    if (const auto process = a_actor->GetActorRuntimeData().currentProcess) {
+        if (const auto equipped = process->GetEquippedLeftHand()) {
+            const auto formID = std::get<uint32_t>(a_args[0]);
+            const auto keyword = RE::TESForm::LookupByID<RE::BGSKeyword>(formID);
+            return keyword && hasKeyword(equipped, keyword);
+        }
     }
-    // 0 = left, 1 = right
-    TESForm* equippedObj = currentProcess->equippedObjects[0];
-    if (!equippedObj)
-    {
-        return false;
-    }
-    BGSKeyword* keyword = 
-        (BGSKeyword*)RE::Game_GetForm(std::get<uint32_t>(args[0]));
-    return keyword
-        && keyword->form.formType == Keyword
-        && hasKeyword(equippedObj, keyword);
+
+    return false;
 }
 
-bool IsEquippedShout(Actor* actor, std::variant<uint32_t, float>* args)
+bool IsEquippedShout(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args)
 {
     // IsEquippedShout(Form shout)
     // Does the actor currently have the specified shout?
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("IsEquippedShout(%08x)", args[0]);
+    logger::info("IsEquippedShout({:08X})", a_args[0]);
 #endif
-    TESForm* selectedPower = actor->selectedPower;
-    return selectedPower 
-        && selectedPower->formID == std::get<uint32_t>(args[0]);
+
+    const auto power = a_actor->GetActorRuntimeData().selectedPower;
+    const auto formID = std::get<uint32_t>(a_args[0]);
+    return power && (power->GetFormID() == formID);
 }
 
-bool IsWorn(Actor* actor, std::variant<uint32_t, float>* args, uint32_t bmArgIsFloat)
+bool IsWorn(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args, uint32_t)
 {
     // IsWorn(Form item)
     // Is the actor wearing the specified item?
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("IsWorn(%08x)", args[0]);
-#endif
+    logger::info("IsWorn({:08X})", a_args[0]);
+#endif 
+    (void)(a_args);
 
     // Get the actor's inventory.
-    ExtraContainerChanges* extraData = 
-        (ExtraContainerChanges*)ExtraDataList_GetByTypeImpl
-        (&actor->ref.extraData, ExtraDataType::kContainerChanges);
-    if (!extraData)
-    {
-        return false;
-    }
-    InventoryChanges* changes = extraData->changes;
-    if (!changes)
-    {
-        return false;
-    }
-    
-    // Now iterate over it and see if we can find the specified item.
-    for (BSTSimpleList_pInventoryEntryData* nodeEntryData = changes->entryList; 
-         nodeEntryData != NULL; nodeEntryData = nodeEntryData->next)
-    {
-        InventoryEntryData* entryData = nodeEntryData->item;
-        if (!entryData)
-        {
-            continue;
-        }
-
-        TESBoundObject* obj = entryData->object;
-        if (obj && obj->tesObj.form.formID == std::get<uint32_t>(args[0]))
-        {
-            // We've found the specified item. Is it being worn?
-            // Compare to commonlibsse's implementation in InventoryEntryData.cpp:
-            //     bool InventoryEntryData::IsWorn() const
-            BSTSimpleList_pExtraDataList* nodeExtraDataList = entryData->extraLists;
-            while (nodeExtraDataList)
-            {
-                ExtraDataList* dataList = nodeExtraDataList->item;
-                if (dataList 
-                    && (ExtraDataList_HasType(dataList, ExtraDataType::kWorn)
-                        || ExtraDataList_HasType(dataList, ExtraDataType::kWornLeft)))
-                {
-                    // Yes the specified item is being worn.
-                    // Given it's in the actor's inventory, we assume that it is
-                    // indeed them who is wearing it (and not a goblin who just happens
-                    // to be stowing away in their back pack).
-                    return true;
-                }
-                nodeExtraDataList = nodeExtraDataList->next;
+    if (const auto invChanges = a_actor->GetInventoryChanges()) {
+        if (const auto entryList = invChanges->entryList) {
+            for (const auto entry : *entryList) {
+                return entry && entry->IsWorn();
             }
         }
     }
+
     return false;
 }
 
-bool IsWornHasKeyword(Actor* actor, std::variant<uint32_t, float>* args)
+bool IsWornHasKeyword(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args)
 {
     // IsWornHasKeyword(Keyword keyword)
     // Is the actor wearing anything with the specified keyword?
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("IsWornHasKeyword(%08x)", args[0]);
+    logger::info("IsWornHasKeyword({:08X})", a_args[0]);
 #endif
 
     // Get the actor's inventory.
-    ExtraContainerChanges* extraData =
-        (ExtraContainerChanges*)ExtraDataList_GetByTypeImpl
-        (&actor->ref.extraData, ExtraDataType::kContainerChanges);
-    if (!extraData)
-    {
-        return false;
-    }
-    InventoryChanges* changes = extraData->changes;
-    if (!changes)
-    {
-        return false;
-    }
-
-    // Now iterate over it and see if we can find the specified item.
-    for (BSTSimpleList_pInventoryEntryData* nodeEntryData = changes->entryList;
-        nodeEntryData != NULL; nodeEntryData = nodeEntryData->next)
-    {
-        InventoryEntryData* entryData = nodeEntryData->item;
-        if (!entryData)
-        {
-            continue;
-        }
-
-        if (hasKeywordBoundObj(entryData->object, args))
-        {
-            // We've found the specified item. Is it being worn?
-            // Compare to commonlibsse's implementation in InventoryEntryData.cpp:
-            //     bool InventoryEntryData::IsWorn() const
-            BSTSimpleList_pExtraDataList* nodeExtraDataList = entryData->extraLists;
-            while (nodeExtraDataList)
-            {
-                ExtraDataList* dataList = nodeExtraDataList->item;
-                if (dataList
-                    && (ExtraDataList_HasType(dataList, ExtraDataType::kWorn)
-                        || ExtraDataList_HasType(dataList, ExtraDataType::kWornLeft)))
-                {
-                    // Yes the specified item is being worn.
-                    // Given it's in the actor's inventory, we assume that it is
-                    // indeed them who is wearing it (and not a goblin who just happens
-                    // to be stowing away in their back pack).
-                    return true;
+    if (const auto invChanges = a_actor->GetInventoryChanges()) {
+        if (const auto entryList = invChanges->entryList) {
+            for (const auto entry : *entryList) {
+                if (entry && hasKeywordBoundObj(entry->object, a_args)) {
+                    return entry->IsWorn();
                 }
-                nodeExtraDataList = nodeExtraDataList->next;
             }
         }
     }
+
     return false;
 }
 
-bool IsFemale(Actor* actor)
+bool IsFemale(RE::Actor* a_actor)
 {
     // IsFemale()
     // Is the actor female?
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("IsFemale()");
+    logger::info("IsFemale()");
 #endif
-    TESActorBase* actorBase = (TESActorBase*)actor->ref.baseForm;
-    return actorBase
-        && (uint8_t)RE::ActorBase_GetSex(actorBase);
+
+    const auto base = a_actor->GetActorBase();
+    return base && base->IsFemale();
 }
 
-bool Is_Child(Actor* actor)
+bool Is_Child(RE::Actor* a_actor)
 {
     // IsChild()
     // Is the actor a child?
     // Need to name this function Is_Child rather than IsChild to avoid
     // clobbering Windows IsChild function defined in WinUser.h
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("IsChild()");
+    logger::info("IsChild()");
 #endif
-    return (*(_TESForm_IsFormTypeChild)(actor->ref.form.pVft + 0x2F0))(actor);
+
+    return a_actor->IsChild();
 }
 
-bool IsPlayerTeammate(Actor* actor)
+bool IsPlayerTeammate(RE::Actor* a_actor)
 {
     // IsPlayerTeammate()
     // Is the actor currently a teammate of the player?
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("IsPlayerTeammate()");
+    logger::info("IsPlayerTeammate()");
 #endif
-    return (actor->boolBits >> 26) & 1;
+
+    return a_actor->IsPlayerTeammate();
 }
 
-bool IsInInterior(Actor* actor)
+bool IsInInterior(RE::Actor* a_actor)
 {
     // IsInInterior()
     // Is the actor in an interior cell ?
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("IsInInterior()");
+    logger::info("IsInInterior()");
 #endif
-    TESObjectCELL* parentCell = actor->ref.parentCell;
-    return parentCell 
-        && (parentCell->cellFlags & TESObjectCELLFlag::kIsInteriorCell) != 0;
+
+    const auto cell = a_actor->GetParentCell();
+    return cell->IsInteriorCell();
 }
 
-bool IsInFaction(Actor* actor, std::variant<uint32_t, float>* args)
+bool IsInFaction(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args)
 {
     // IsInFaction(Faction faction)
     // Is the actor in the specified faction?
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("IsInFaction(%08x)", args[0]);
+    logger::info("IsInFaction({:08X})", a_args[0]);
 #endif
-    TESForm* form = RE::Game_GetForm(std::get<uint32_t>(args[0]));
-    return form
-        && form->formType == FormType::Faction
-        && (*(_Actor_IsInFaction)(actor->ref.form.pVft + 0x7C8))(actor, form);
+
+    const auto formID = std::get<uint32_t>(a_args[0]);
+    const auto faction = RE::TESForm::LookupByID<RE::TESFaction>(formID);
+    return faction && a_actor->IsInFaction(faction);
 }
 
-bool HasKeyword(Actor* actor, std::variant<uint32_t, float>* args)
+bool HasKeyword(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args)
 {
     // HasKeyword(Keyword keyword)
     // Does the actor have the specified keyword?
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("HasKeyword(%08x)", args[0]);
+    logger::info("HasKeyword({:08X})", a_args[0]);
 #endif
-    TESForm* form = RE::Game_GetForm(std::get<uint32_t>(args[0]));
-    return form
-        && form->formType == FormType::Keyword
-        && (*(_Actor_HasKeyword)(actor->ref.form.pVft + 0x240))(actor, form);
+
+    const auto formID = std::get<uint32_t>(a_args[0]);
+    const auto keyword = RE::TESForm::LookupByID<RE::BGSKeyword>(formID);
+    return keyword && a_actor->HasKeyword(keyword);
 }
 
-bool HasMagicEffect(Actor* actor, std::variant<uint32_t, float>* args)
+bool HasMagicEffect(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args)
 {
     // HasMagicEffect(MagicEffect magiceffect)
     // Is the actor currently being affected by the given Magic Effect?
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("HasMagicEffect(%08x)", args[0]);
+    logger::info("HasMagicEffect({:08X})", a_args[0]);
 #endif
-    TESForm* form = RE::Game_GetForm(std::get<uint32_t>(args[0]));
-    return form
-        && form->formType == FormType::MagicEffect
-        && RE::MagicTarget_HasMagicEffect(&actor->magicTarget, form);
+
+    const auto formID = std::get<uint32_t>(a_args[0]);
+    const auto effect = RE::TESForm::LookupByID<RE::EffectSetting>(formID);
+    const auto target = a_actor->GetMagicTarget();
+    return effect && target && target->HasMagicEffect(effect);
 }
 
-bool HasMagicEffectWithKeyword(Actor* actor, std::variant<uint32_t, float>* args)
+bool HasMagicEffectWithKeyword(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args)
 {
     // HasMagicEffectWithKeyword(Keyword keyword)
     // Is the actor currently being affected by a Magic Effect with the given Keyword?
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("HasMagicEffectWithKeyword(% 08x)", args[0]);
+    logger::info("HasMagicEffectWithKeyword({:08X})", a_args[0]);
 #endif
-    TESForm* form = RE::Game_GetForm(std::get<uint32_t>(args[0]));
-    return form 
-        && form->formType == FormType::Keyword
-        && RE::MagicTarget_HasMagicEffectWithKeyword
-           (&actor->magicTarget, form, 0);
+
+    const auto formID = std::get<uint32_t>(a_args[0]);
+    const auto keyword = RE::TESForm::LookupByID<RE::BGSKeyword>(formID);
+    const auto target = a_actor->GetMagicTarget();
+    return keyword && target && RE::MagicTarget_HasMagicEffectWithKeyword(target, keyword, 0);
 }
 
-bool HasPerk(Actor* actor, std::variant<uint32_t, float>* args)
+bool HasPerk(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args)
 {
     // HasPerk(Perk perk)
     // Does the actor have the given Perk ?
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("HasPerk(%08x)", args[0]);
+    logger::info("HasPerk({:08X})", a_args[0]);
 #endif
-    TESForm* form = RE::Game_GetForm(std::get<uint32_t>(args[0]));
-    return form
-        && form->formType == FormType::Perk
-        && RE::Actor_HasPerk(actor, form);
+
+    const auto formID = std::get<uint32_t>(a_args[0]);
+    const auto perk = RE::TESForm::LookupByID<RE::BGSPerk>(formID);
+    return perk && a_actor->HasPerk(perk);
 }
 
-bool HasSpell(Actor* actor, std::variant<uint32_t, float>* args)
+bool HasSpell(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args)
 {
     // HasSpell(Form spell)
     // Does the actor have the given Spell or Shout?
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("HasSpell(%08x)", args[0]);
+    logger::info("HasSpell({:08X})", a_args[0]);
 #endif
-    TESForm* form = RE::Game_GetForm(std::get<uint32_t>(args[0]));
-    if (!form) {
-        return false;
+
+    const auto formID = std::get<uint32_t>(a_args[0]);
+    if (const auto form = RE::TESForm::LookupByID(formID)) {
+        if (form->Is(RE::FormType::Spell))
+            return a_actor->HasSpell(form->As<RE::SpellItem>());
+        if (form->Is(RE::FormType::Shout))
+            return RE::Actor_HasShout(a_actor, form->As<RE::TESShout>());
     }
-    uint8_t formType = form->formType;
-    if (formType == FormType::Spell)
-    {
-        return RE::Actor_HasSpell(actor, form);
-    }
-    if (formType == FormType::Shout)
-    {
-        return RE::Actor_HasShout(actor, form);
-    }
+
     return false;
 }
 
-bool IsActorValueEqualTo(Actor* actor, std::variant<uint32_t, float>* args, uint32_t bmArgIsFloat)
+bool IsActorValueEqualTo(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args, uint32_t a_bmArgIsFloat)
 {
     // IsActorValueEqualTo(GlobalVariable id, GlobalVariable value)
     // Is the ActorValue of the specified ID equal to the value?
     // Temporarily disabled because it's crashing.
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("IsActorValueEqualTo(%08x, %08x)", args[0], args[1]);
+    logger::info("IsActorValueEqualTo({:08X}, {:08X})", a_args[0], a_args[1]);
 #endif
-    float fArgs[2];
-    if (!readGlobalVars(fArgs, args, bmArgIsFloat, 2))
-    {
+
+    float args[2];
+    if (!readGlobalVars(args, a_args, a_bmArgIsFloat, 2)) {
         return false;
     }
-    float fActorVal = 
-        (*(_ActorValueOwner_GetActorValue)(actor->actorValueOwner.pVFT + 8))
-        (&actor->actorValueOwner, (uint32_t)fArgs[0]);
-    return (fActorVal == fArgs[1]);
+
+    const auto owner = a_actor->AsActorValueOwner();
+    const auto value = owner->GetActorValue(static_cast<RE::ActorValue>(args[0]));
+    return (value == args[1]);
 }
 
-bool IsActorValueLessThan(Actor* actor, std::variant<uint32_t, float>* args, uint32_t bmArgIsFloat)
+bool IsActorValueLessThan(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args, uint32_t a_bmArgIsFloat)
 {
     // IsActorValueLessThan(GlobalVariable id, GlobalVariable value)
     // Is the ActorValue of the specified ID less than the value?
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("IsActorValueLessThan(%08x, %08x)", args[0], args[1]);
+    logger::info("IsActorValueLessThan({:08X}, {:08X})", a_args[0], a_args[1]);
 #endif
-    float fArgs[2];
-    if (!readGlobalVars(fArgs, args, bmArgIsFloat, 2))
-    {
+
+    float args[2];
+    if (!readGlobalVars(args, a_args, a_bmArgIsFloat, 2)) {
         return false;
     }
-    float fActorVal =
-        (*(_ActorValueOwner_GetActorValue)(actor->actorValueOwner.pVFT + 8))
-        (&actor->actorValueOwner, (uint32_t)fArgs[0]);
-    return (fActorVal < fArgs[1]);
+
+    const auto owner = a_actor->AsActorValueOwner();
+    const auto value = owner->GetActorValue(static_cast<RE::ActorValue>(args[0]));
+    return (value < args[1]);
 }
 
-bool IsActorValueBaseEqualTo(Actor* actor, std::variant<uint32_t, float>* args, uint32_t bmArgIsFloat)
+bool IsActorValueBaseEqualTo(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args, uint32_t a_bmArgIsFloat)
 {
     // IsActorValueBaseEqualTo(GlobalVariable id, GlobalVariable value)
     // Is the base ActorValue of the specified ID equal to the value?
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("IsActorValueBaseEqualTo(%08x, %08x)", args[0], args[1]);
+    logger::info("IsActorValueBaseEqualTo({:08X}, {:08X})", a_args[0], a_args[1]);
 #endif
-    float fArgs[2];
-    if (!readGlobalVars(fArgs, args, bmArgIsFloat, 2))
-    {
+
+    float args[2];
+    if (!readGlobalVars(args, a_args, a_bmArgIsFloat, 2)) {
         return false;
     }
-    float fActorValBase = 
-        (*(_ActorValueOwner_GetBaseActorValue)(actor->actorValueOwner.pVFT + 0x18))
-        (&actor->actorValueOwner, fArgs[0]);
-    return (fActorValBase == fArgs[1]);
+
+    const auto owner = a_actor->AsActorValueOwner();
+    const auto value = owner->GetBaseActorValue(static_cast<RE::ActorValue>(args[0]));
+    return (value == args[1]);
 }
 
-bool IsActorValueBaseLessThan(Actor* actor, std::variant<uint32_t, float>* args, uint32_t bmArgIsFloat)
+bool IsActorValueBaseLessThan(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args, uint32_t a_bmArgIsFloat)
 {
     // IsActorValueBaseLessThan(GlobalVariable id, GlobalVariable value)
     // Is the base ActorValue of the specified ID less than the value?
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("IsActorValueBaseLessThan(%08x, %08x)", args[0], args[1]);
+    logger::info("IsActorValueBaseLessThan({:08X}, {:08X})", args[0], args[1]);
 #endif
-    float fArgs[2];
-    if (!readGlobalVars(fArgs, args, bmArgIsFloat, 2))
-    {
+
+    float args[2];
+    if (!readGlobalVars(args, a_args, a_bmArgIsFloat, 2)) {
         return false;
     }
-    float fActorValBase =
-        (*(_ActorValueOwner_GetBaseActorValue)(actor->actorValueOwner.pVFT + 0x18))
-        (&actor->actorValueOwner, fArgs[0]);
-    return (fActorValBase < fArgs[1]);
+
+    const auto owner = a_actor->AsActorValueOwner();
+    const auto value = owner->GetBaseActorValue(static_cast<RE::ActorValue>(args[0]));
+    return (value < args[1]);
 }
 
-bool IsActorValueMaxEqualTo(Actor* actor, std::variant<uint32_t, float>* args, uint32_t bmArgIsFloat)
+bool IsActorValueMaxEqualTo(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args, uint32_t a_bmArgIsFloat)
 {
     // IsActorValueMaxEqualTo(GlobalVariable id, GlobalVariable value)
     // Is the max ActorValue of the specified ID equal to the value?
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("IsActorValueMaxEqualTo(%08x, %08x)", args[0], args[1]);
+    logger::info("IsActorValueMaxEqualTo({:08X}, {:08X})", a_args[0], a_args[1]);
 #endif
-    float fArgs[2];
-    if (!readGlobalVars(fArgs, args, bmArgIsFloat, 2))
-    {
+
+    float args[2];
+    if (!readGlobalVars(args, a_args, a_bmArgIsFloat, 2)) {
         return false;
     }
-    float fActorValMax =
-        (*(_ActorValueOwner_GetPermanentActorValue)(actor->actorValueOwner.pVFT + 0x10))
-        (&actor->actorValueOwner, fArgs[0]);
-    return (fActorValMax == fArgs[1]);
+
+    const auto owner = a_actor->AsActorValueOwner();
+    const auto value = owner->GetPermanentActorValue(static_cast<RE::ActorValue>(args[0]));
+    return (value == args[1]);
 }
 
-bool IsActorValueMaxLessThan(Actor* actor, std::variant<uint32_t, float>* args, uint32_t bmArgIsFloat)
+bool IsActorValueMaxLessThan(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args, uint32_t a_bmArgIsFloat)
 {
     // IsActorValueMaxLessThan(GlobalVariable id, GlobalVariable value)
     // Is the max ActorValue of the specified ID less than the value?
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("IsActorValueMaxLessThan(%08x, %08x)", args[0], args[1]);
+    logger::info("IsActorValueMaxLessThan({:08X}, {:08X})", a_args[0], a_args[1]);
 #endif
-    float fArgs[2];
-    if (!readGlobalVars(fArgs, args, bmArgIsFloat, 2))
-    {
+
+    float args[2];
+    if (!readGlobalVars(args, a_args, a_bmArgIsFloat, 2)) {
         return false;
     }
-    float fActorValMax =
-        (*(_ActorValueOwner_GetPermanentActorValue)(actor->actorValueOwner.pVFT + 0x10))
-        (&actor->actorValueOwner, fArgs[0]);
-    return (fActorValMax < fArgs[1]);
+
+    const auto owner = a_actor->AsActorValueOwner();
+    const auto value = owner->GetPermanentActorValue(static_cast<RE::ActorValue>(args[0]));
+    return (value < args[1]);
 }
 
-bool IsActorValuePercentageEqualTo(Actor* actor, std::variant<uint32_t, float>* args, uint32_t bmArgIsFloat)
+bool IsActorValuePercentageEqualTo(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args, uint32_t a_bmArgIsFloat)
 {
     // IsActorValuePercentageEqualTo(GlobalVariable id, GlobalVariable value)
     // Is the percentage ActorValue of the specified ID equal to the value?
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("IsActorValuePercentageEqualTo(%08x, %08x)", args[0], args[1]);
+    logger::info("IsActorValuePercentageEqualTo({:08X}, {:08X})", a_args[0], a_args[1]);
 #endif
-    float fArgs[2];
-    if (!readGlobalVars(fArgs, args, bmArgIsFloat, 2))
-    {
+
+    float args[2];
+    if (!readGlobalVars(args, a_args, a_bmArgIsFloat, 2)) {
         return false;
     }
-    float fActorValPct = getActorValPct(actor, (uint32_t)fArgs[0]);
-    return (fActorValPct == fArgs[1]);
+
+    const auto value = getActorValPct(a_actor, static_cast<uint32_t>(args[0]));
+    return (value == args[1]);
 }
 
-bool IsActorValuePercentageLessThan(Actor* actor, std::variant<uint32_t, float>* args, uint32_t bmArgIsFloat)
+bool IsActorValuePercentageLessThan(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args, uint32_t a_bmArgIsFloat)
 {
     // IsActorValuePercentageLessThan(GlobalVariable id, GlobalVariable value)
     // Is the percentage ActorValue of the specified ID less than the value?
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("IsActorValuePercentageLessThan(%08x, %08x)", args[0], args[1]);
+    logger::info("IsActorValuePercentageLessThan({:08X}, {:08X})", a_args[0], a_args[1]);
 #endif
-    float fArgs[2];
-    if (!readGlobalVars(fArgs, args, bmArgIsFloat, 2))
-    {
+
+    float args[2];
+    if (!readGlobalVars(args, a_args, a_bmArgIsFloat, 2)) {
         return false;
     }
-    float fActorValPct = getActorValPct(actor, (uint32_t)fArgs[0]);
-    return (fActorValPct < fArgs[1]);
+
+    const auto value = getActorValPct(a_actor, static_cast<uint32_t>(args[0]));
+    return (value < args[1]);
 }
 
-bool IsLevelLessThan(Actor* actor, std::variant<uint32_t, float>* args, uint32_t bmArgIsFloat)
+bool IsLevelLessThan(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args, uint32_t a_bmArgIsFloat)
 {
     // IsLevelLessThan(GlobalVariable level)
     // Is the actor's current level less than the specified level?
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("IsLevelLessThan(%08x)", args[0]);
+    logger::info("IsLevelLessThan({:08X})", a_args[0]);
 #endif
-    float fArg0;
-    if (!readGlobalVars(&fArg0, args, bmArgIsFloat, 1))
-    {
+
+    float arg;
+    if (!readGlobalVars(&arg, a_args, a_bmArgIsFloat, 1)) {
         return false;
     }
-    uint16_t actorLevel = RE::Actor_GetLevel(actor);
-    return actorLevel < fArg0;
+
+    const auto level = a_actor->GetLevel();
+    return (level < arg);
 }
 
-bool IsActorBase(Actor* actor, std::variant<uint32_t, float>* args)
+bool IsActorBase(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args)
 {
     // IsActorBase(ActorBase actorbase)
     // Is the actorbase for the actor the specified actorbase?
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("IsActorBase(%08x)", args[0]);
+    logger::info("IsActorBase({:08X})", a_args[0]);
 #endif
-    TESForm* baseForm = actor->ref.baseForm;
-    return baseForm 
-        && baseForm->formID == std::get<uint32_t>(args[0]);
+
+    const auto base = a_actor->GetActorBase();
+    const auto formID = std::get<uint32_t>(a_args[0]);
+    return base && (base->GetFormID() == formID);
 }
 
-bool IsRace(Actor* actor, std::variant<uint32_t, float>* args)
+bool IsRace(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args)
 {
     // IsRace(Race race)
     // Is the actor's race the specified race?
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("IsRace(%08x)", args[0]);
+    logger::info("IsRace({:08X})", a_args[0]);
 #endif
-    TESNPC* npc = (TESNPC*)actor->ref.baseForm;
-    if (!npc)
-    {
-        return false;
-    }
-    TESRace* race = npc->raceForm.race;
-    return race 
-        && race->form.formID == std::get<uint32_t>(args[0]);
+
+    const auto race = a_actor->GetRace();
+    const auto formID = std::get<uint32_t>(a_args[0]);
+    return race && (race->GetFormID() == formID);
 }
 
-bool CurrentWeather(Actor* actor, std::variant<uint32_t, float>* args)
+bool CurrentWeather(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args)
 {
     // CurrentWeather(Weather weather)
     // Is the current weather the specified weather?
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("CurrentWeather(%08x)", args[0]);
+    logger::info("CurrentWeather({:08X})", a_args[0]);
 #endif
-    Sky* theSky = RE::Sky_GetSingleton();
-    if (theSky)
-    {
-        TESWeather* curWeather = theSky->currentWeather;
-        if (curWeather)
-        {
-            if (curWeather->form.formID == std::get<uint32_t>(args[0]))
-            {
+    (void)(a_actor);
+
+    if (const auto sky = RE::Sky::GetSingleton()) {
+        if (const auto weather = sky->currentWeather) {
+            const auto formID = std::get<uint32_t>(a_args[0]);
+            if (weather->GetFormID() == formID) {
                 return true;
             }
         }
     }
+
     return false;
 }
 
-bool CurrentGameTimeLessThan(Actor* actor, std::variant<uint32_t, float>* args, uint32_t bmArgIsFloat)
+bool CurrentGameTimeLessThan(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args, uint32_t a_bmArgIsFloat)
 {
     // CurrentGameTimeLessThan(GlobalVariable time)
     // Is the current game time less than the specified time?
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("CurrentGameTimeLessThan(% 08x)", args[0]);
+    logger::info("CurrentGameTimeLessThan({:08X})", a_args[0]);
 #endif
-    float fArg0;
-    if (!readGlobalVars(&fArg0, args, bmArgIsFloat, 1))
-    {
+    (void)(a_actor);
+
+    float arg;
+    if (!readGlobalVars(&arg, a_args, a_bmArgIsFloat, 1)) {
         return false;
     }
 
-    float gameDaysPassed = 
-        RE::Calendar_GetCurrentGameTime(*RE::g_theCalendar);
+    if (const auto calendar = RE::Calendar::GetSingleton()) {
+        const float gameDaysPassed = calendar->GetCurrentGameTime();
+        // This gives the fractional part of the game time, i.e. proportion of the current
+        // day that has passed. We then multiply it by the number of game hours per day
+        // to get the current time of the day:
 
-    // This gives the fractional part of the game time, i.e. proportion of the current
-    // day that has passed. We then multiply it by the number of game hours per day
-    // to get the current time of the day:
-    float f = 0.0;
-    float pctCurDayPassed = modff(gameDaysPassed, &f);
-    return fArg0 > (float)(pctCurDayPassed * *RE::g_gameHoursPerGameDay);
+        float f = 0.0;
+        const auto pctCurDayPassed = std::modff(gameDaysPassed, &f);
+        return arg > (pctCurDayPassed * RE::Calendar_GetHoursPerDay());
+    }
+
+    return false;
 }
 
-bool ValueEqualTo(Actor* actor, std::variant<uint32_t, float>* args, uint32_t bmArgIsFloat)
+bool ValueEqualTo(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args, uint32_t a_bmArgIsFloat)
 {
     // ValueEqualTo(GlobalVariable value1, GlobalVariable value2)
     // Is the value1 equal to the value2?
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("ValueEqualTo(%08x, %08x)", args[0], args[1]);
+    logger::info("ValueEqualTo({:08X}, {:08X})", a_args[0], a_args[1]);
 #endif
-    float fArgs[2];
-    if (!readGlobalVars(fArgs, args, bmArgIsFloat, 2))
-    {
+    (void)(a_actor);
+
+    float args[2];
+    if (!readGlobalVars(args, a_args, a_bmArgIsFloat, 2)) {
         return false;
     }
-    return (fArgs[0] == fArgs[1]);
+
+    return (args[0] == args[1]);
 }
 
-bool ValueLessThan(Actor* actor, std::variant<uint32_t, float>* args, uint32_t bmArgIsFloat)
+bool ValueLessThan(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args, uint32_t a_bmArgIsFloat)
 {
     // ValueLessThan(GlobalVariable value1, GlobalVariable value2)
     // Is the value1 less than the value2?
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("ValueLessThan(%08x, %08x)", args[0], args[1]);
+    logger::info("ValueLessThan({:08X}, {:08X})", a_args[0], a_args[1]);
 #endif
-    float fArgs[2];
-    if (!readGlobalVars(fArgs, args, bmArgIsFloat, 2))
-    {
+    (void)(a_actor);
+
+    float args[2];
+    if (!readGlobalVars(args, a_args, a_bmArgIsFloat, 2)) {
         return false;
     }
-    return (fArgs[0] < fArgs[1]);
+
+    return (args[0] < args[1]);
 }
 
-bool Random(Actor* actor, std::variant<uint32_t, float>* args, uint32_t bmArgIsFloat)
+bool Random(RE::Actor*, std::variant<uint32_t, float>* a_args, uint32_t a_bmArgIsFloat)
 {
     // Random(GlobalVariable percentage)
     // The probability of the specified percentage (from 0 to 1).
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("Random(%08x)", args[0]);
+    logger::info("Random({:08X})", a_args[0]);
 #endif
-    float fArg0;
-    if (!readGlobalVars(&fArg0, args, bmArgIsFloat, 1))
-    {
+
+    float arg;
+    if (!readGlobalVars(&arg, a_args, a_bmArgIsFloat, 1)) {
         return false;
     }
 
     // Some sanity checks before we proceed...
-    if (fArg0 < 0.0 || fArg0 > 1.0)
-    {
+    if (arg < 0.0 || arg > 1.0) {
         // Invalid values. Just return false.
         return false;
-    } 
-    else if (fArg0 == 1.0)
-    {
+    } else if (arg == 1.0) {
         // Just in case, given our random number generator
-        // below will never return 1. Although calling this 
+        // below will never return 1. Although calling this
         // function with a pct of 1, although valid would be
         // silly as then we have certainty and the condition is
         // thus completely redundant.
@@ -1106,303 +900,282 @@ bool Random(Actor* actor, std::variant<uint32_t, float>* args, uint32_t bmArgIsF
 
     // Ok, continue.
     // Generate a random number in the range [0, 1).
-    std::random_device r;
-    std::mt19937 gen(r());
+    std::random_device device;
+    std::mt19937 gen(device());
     float prob = std::generate_canonical<float, 10>(gen);
-      
-    return (fArg0 > prob);
+
+    return (arg > prob);
 }
 
-bool IsUnique(Actor* actor)
+bool IsUnique(RE::Actor* a_actor)
 {
     // IsUnique()
     // Is the actor flagged as unique?
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("IsUnique()");
+    logger::info("IsUnique()");
 #endif
-    TESNPC* npc = (TESNPC*)actor->ref.baseForm;
-    return npc && 
-        (npc->actorBase.actorData.actorData.actorBaseFlags &
-         ACTOR_BASE_DATA::Flag::kUnique) != 0;
+
+    const auto base = a_actor->GetActorBase();
+    return base && base->IsUnique();
 }
 
-bool IsClass(Actor* actor, std::variant<uint32_t, float>* args)
+bool IsClass(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args)
 {
     // IsClass(Class class)
     // Is the actor's class the specified class?
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("IsClass(%08x)", args[0]);
+    logger::info("IsClass({:08X})", a_args[0]);
 #endif
-    TESNPC* form = (TESNPC*)actor->ref.baseForm;
-    if (form)
-    {
-        TESClass* npcClass = form->npcClass;
-        if (npcClass)
-        {
-            if (npcClass->form.formID == std::get<uint32_t>(args[0]))
-            {
+
+    if (const auto base = a_actor->GetActorBase()) {
+        if (const auto cls = base->npcClass) {
+            const auto formID = std::get<uint32_t>(a_args[0]);
+            if (cls->GetFormID() == formID) {
                 return true;
             }
         }
     }
+
     return false;
 }
 
-bool IsCombatStyle(Actor* actor, std::variant<uint32_t, float>* args)
+bool IsCombatStyle(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args)
 {
     // IsCombatStyle(CombatStyle combatStyle)
     // Is the actor's CombatStyle the specified CombatStyle?
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("IsCombatStyle(%08x)", args[0]);
+    logger::info("IsCombatStyle({:08X})", a_args[0]);
 #endif
-    TESNPC* npc = (TESNPC*)actor->ref.baseForm;
-    if (npc)
-    {
-        TESCombatStyle* combatStyle = npc->combatStyle;
-        if (combatStyle)
-        {
-            if (combatStyle->form.formID == std::get<uint32_t>(args[0]))
-            {
+
+    if (const auto base = a_actor->GetActorBase()) {
+        if (const auto style = base->combatStyle) {
+            const auto formID = std::get<uint32_t>(a_args[0]);
+            if (style->GetFormID() == formID) {
                 return true;
             }
         }
     }
+
     return false;
 }
 
-bool IsVoiceType(Actor* actor, std::variant<uint32_t, float>* args)
+bool IsVoiceType(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args)
 {
     // IsVoiceType(VoiceType voiceType)
     // Is the actor's VoiceType the specified VoiceType?
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("IsVoiceType(%08x)", args[0]);
+    logger::info("IsVoiceType({:08X})", a_args[0]);
 #endif
-    TESNPC* npc = (TESNPC*)actor->ref.baseForm;
-    if (npc)
-    {
-        BGSVoiceType* voiceType = npc->actorBase.actorData.voiceType;
-        if (voiceType)
-        {
-            if (voiceType->form.formID == std::get<uint32_t>(args[0]))
-            {
+
+    if (const auto base = a_actor->GetActorBase()) {
+        if (const auto type = base->voiceType) {
+            const auto formID = std::get<uint32_t>(a_args[0]);
+            if (type->GetFormID() == formID) {
                 return true;
             }
         }
     }
+
     return false;
 }
 
-bool IsAttacking(Actor* actor)
+bool IsAttacking(RE::Actor* a_actor)
 {
     // IsAttacking()
     // Is the actor currently attacking?
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("IsAttacking()");
+    logger::info("IsAttacking()");
 #endif
-    return (actor->actorState.actorState1.meleeAttackState != ATTACK_STATE_ENUM::kNone);
+
+    return a_actor->IsAttacking();
 }
 
-bool IsRunning(Actor* actor)
+bool IsRunning(RE::Actor* a_actor)
 {
     // IsRunning()
     // Is the actor currently running?
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("IsRunning()");
+    logger::info("IsRunning()");
 #endif
-    return RE::Actor_IsRunning(actor);
+
+    return a_actor->IsRunning();
 }
 
-bool IsSneaking(Actor* actor)
+bool IsSneaking(RE::Actor* a_actor)
 {
     // IsSneaking()
     // Is the actor currently sneaking ?
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("IsSneaking()");
+    logger::info("IsSneaking()");
 #endif
-    return (actor->actorState.actorState1.sneaking
-        && !RE::Actor_IsOnMount(actor));
+
+    return a_actor->IsSneaking();
 }
 
-bool IsSprinting(Actor* actor)
+bool IsSprinting(RE::Actor* a_actor)
 {
     // IsSprinting()
     // Is the actor currently sprinting?
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("IsSprinting()");
+    logger::info("IsSprinting()");
 #endif
-    return actor->actorState.actorState1.sprinting;
+
+    return a_actor->AsActorState()->IsSprinting();
 }
 
-bool IsInAir(Actor* actor)
+bool IsInAir(RE::Actor* a_actor)
 {
     // IsInAir()
     // Is the actor in the air?
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("IsInAir()");
+    logger::info("IsInAir()");
 #endif
-    return RE::Actor_IsInAir(actor);
+
+    return a_actor->AsActorState()->IsFlying();
 }
 
-bool IsInCombat(Actor* actor)
+bool IsInCombat(RE::Actor* a_actor)
 {
     // IsInCombat()
     // Is the actor in combat?
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("IsInCombat()");
+    logger::info("IsInCombat()");
 #endif
-    return (*(_Actor_IsInCombat)(actor->ref.form.pVft + 0x718))(actor);
+
+    return a_actor->IsInCombat();
 }
 
-bool IsWeaponDrawn(Actor* actor)
+bool IsWeaponDrawn(RE::Actor* a_actor)
 {
     // IsWeaponDrawn()
     // Does the actor have his equipped weapon and/or magic spell drawn?
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("IsWeaponDrawn()");
+    logger::info("IsWeaponDrawn()");
 #endif
-    return actor->actorState.actorState2.weaponState >= WEAPON_STATE::kDrawn;
+
+    return a_actor->AsActorState()->IsWeaponDrawn();
 }
 
-bool IsInLocation(Actor* actor, std::variant<uint32_t, float>* args)
+bool IsInLocation(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args)
 {
     // IsInLocation(Location location)
     // Is the actor in the specified location or a child of that location?
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("IsInLocation(%08x)", args[0]);
+    logger::info("IsInLocation({:08X})", a_args[0]);
 #endif
-    BGSLocation* curLoc;
-    TESForm* frm;
-    TESForm* frmBGSLocation = RE::Game_GetForm(std::get<uint32_t>(args[0]));
-    if (frmBGSLocation
-        && frmBGSLocation->formType == FormType::Location
-        && (curLoc = (BGSLocation*)RE::ObjectReference_GetCurrentLocation((TESObjectREFR*)actor), 
-            (frm = &curLoc->form) != NULL))
-    {
-        while (true)
-        {
-            curLoc = curLoc->parentLoc;
-            if (curLoc == (BGSLocation*)frmBGSLocation)
-            {
-                break;
-            }
-            if (!curLoc)
-            {
-                if (frm != frmBGSLocation)
-                {
-                    return false;
-                }
-                break;
-            }
+
+    const auto formID = std::get<uint32_t>(a_args[0]);
+    if (const auto location = RE::TESForm::LookupByID<RE::BGSLocation>(formID)) {
+        if (const auto curLocation = a_actor->GetCurrentLocation()) {
+            if (location == curLocation)
+                return true;
+
+            return location->IsChild(curLocation);
         }
-        return true;
     }
+
     return false;
 }
 
-bool HasRefType(Actor* actor, std::variant<uint32_t, float>* args)
+bool HasRefType(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args)
 {
     // HasRefType(LocationRefType refType)
     // Does the actor have the specified LocationRefType attached?
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("HasRefType(%08x)", args[0]);
+    logger::info("HasRefType({:08X})", a_args[0]);
 #endif
-    TESForm* frmBGSLocationRefType = RE::Game_GetForm(std::get<uint32_t>(args[0]));
-    if (!frmBGSLocationRefType || frmBGSLocationRefType->formType != LocationRefType)
-    {
-        return false;
+
+    const auto formID = std::get<uint32_t>(a_args[0]);
+    if (const auto locRefType = RE::TESForm::LookupByID<RE::BGSLocationRefType>(formID)) {
+        const auto extra = a_actor->extraList.GetByType<RE::ExtraLocationRefType>();
+        return extra && (extra->locRefType == locRefType);
     }
-    ExtraLocationRefType* locRef = 
-        (ExtraLocationRefType*)ExtraDataList_GetByTypeImpl(&actor->ref.extraData, ExtraDataType::kLocationRefType);
-    return locRef 
-        && locRef->locRefType == (BGSLocationRefType*)frmBGSLocationRefType;
+
+    return false;
 }
 
-bool IsParentCell(Actor* actor, std::variant<uint32_t, float>* args)
+bool IsParentCell(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args)
 {
     // IsParentCell(Cell cell)
     // Is the actor in the specified cell?
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("IsParentCell(%08x)", args[0]);
+    logger::info("IsParentCell({:08X})", a_args[0]);
 #endif
-    TESObjectCELL* parentCell = actor->ref.parentCell;
-    return parentCell 
-        && parentCell->form.formID == std::get<uint32_t>(args[0]);
+
+    const auto cell = a_actor->GetParentCell();
+    const auto formID = std::get<uint32_t>(a_args[0]);
+    return cell && (cell->GetFormID() == formID);
 }
 
-bool IsWorldSpace(Actor* actor, std::variant<uint32_t, float>* args)
+bool IsWorldSpace(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args)
 {
     // IsWorldSpace(WorldSpace worldSpace)
     // Is the actor in the specified WorldSpace?
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("IsWorldSpace(%08x)", args[0]);
+    logger::info("IsWorldSpace({:08X})", a_args[0]);
 #endif
-    TESWorldSpace* worldspace = 
-        RE::TESObjectREFR_GetWorldSpace(&actor->ref);
-    return worldspace 
-        && worldspace->form.formID == std::get<uint32_t>(args[0]);
+    const auto worldspace = a_actor->GetWorldspace();
+    const auto formID = std::get<uint32_t>(a_args[0]);
+    return worldspace && (worldspace->GetFormID() == formID);
 }
 
-bool IsFactionRankEqualTo(Actor* actor, std::variant<uint32_t, float>* args, uint32_t bmArgIsFloat)
+bool IsFactionRankEqualTo(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args, uint32_t a_bmArgIsFloat)
 {
     // IsFactionRankEqualTo(GlobalVariable rank, Faction faction)
     // Is the actor's rank in the specified faction equal to the specified rank?
-    // 
+    //
     // From the DAR documentation:
     //   "The actor's rank in the specified faction:
     //      => -2 if the Actor is not in the faction.
-    //      => -1 if the Actor is in the faction, with a rank set to -1. 
-    //            (By convention, this means they may eventually become a member 
+    //      => -1 if the Actor is in the faction, with a rank set to -1.
+    //            (By convention, this means they may eventually become a member
     //             of this faction.)
     //      => A non-negative number equal to the actor's rank in the faction."
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("IsFactionRankEqualTo(%08x, %08x)", args[0], args[1]);
+    logger::info("IsFactionRankEqualTo({:08X}, {:08X})", a_args[0], a_args[1]);
 #endif
-    float fArg0;
-    if (!readGlobalVars(&fArg0, args, bmArgIsFloat, 1))
-    {
+
+    float arg;
+    if (!readGlobalVars(&arg, a_args, a_bmArgIsFloat, 1)) {
         return false;
     }
 
-    TESForm* frmTESFaction = RE::Game_GetForm(std::get<uint32_t>(args[1]));
-    if (!frmTESFaction || frmTESFaction->formType != FormType::Faction)
-    {
+    const auto formID = std::get<uint32_t>(a_args[1]);
+    const auto faction = RE::TESForm::LookupByID<RE::TESFaction>(formID);
+    if (!faction || !a_actor->IsInFaction(faction)) {
         return false;
     }
-  
-    bool isPlayer = (actor == *(Actor**)RE::g_thePlayer);
-    float actorRank = 
-        (float)RE::Actor_GetFactionRank
-        (actor, (TESFaction*)frmTESFaction, isPlayer);
-    return (actorRank == fArg0);
+
+    const bool isPlayer = a_actor->IsPlayer();
+    const auto rank = RE::Actor_GetFactionRank(a_actor, faction, isPlayer);
+    return (static_cast<float>(rank) == arg);
 }
 
-bool IsFactionRankLessThan(Actor* actor, std::variant<uint32_t, float>* args, uint32_t bmArgIsFloat)
+bool IsFactionRankLessThan(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args, uint32_t a_bmArgIsFloat)
 {
     // IsFactionRankLessThan(GlobalVariable rank, Faction faction)
     // Is the actor's rank in the specified faction less than the specified rank?
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("IsFactionRankLessThan(%08x, %08x)", args[0], args[1]);
+    logger::info("IsFactionRankLessThan({:08X}, {:08X})", a_args[0], a_args[1]);
 #endif
-    float fArg0;
-    if (!readGlobalVars(&fArg0, args, bmArgIsFloat, 1))
-    {
+
+    float arg;
+    if (!readGlobalVars(&arg, a_args, a_bmArgIsFloat, 1)) {
         return false;
     }
 
-    TESForm* frmTESFaction = RE::Game_GetForm(std::get<uint32_t>(args[1]));
-    if (!frmTESFaction || frmTESFaction->formType != FormType::Faction)
-    {
+    const auto formID = std::get<uint32_t>(a_args[1]);
+    const auto faction = RE::TESForm::LookupByID<RE::TESFaction>(formID);
+    if (!faction || !a_actor->IsInFaction(faction)) {
         return false;
     }
 
-    bool isPlayer = (actor == *(Actor**)RE::g_thePlayer);
-    float actorRank =
-        (float)RE::Actor_GetFactionRank
-        (actor, (TESFaction*)frmTESFaction, isPlayer);
-    return (actorRank < fArg0);
+    const bool isPlayer = a_actor->IsPlayer();
+    const auto rank = RE::Actor_GetFactionRank(a_actor, faction, isPlayer);
+    return (static_cast<float>(rank) < arg);
 }
 
-bool IsMovementDirection(Actor* actor, std::variant<uint32_t, float>* args, uint32_t bmArgIsFloat)
+bool IsMovementDirection(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args, uint32_t a_bmArgIsFloat)
 {
     // IsMovementDirection(GlobalVariable direction)
     // Is the actor moving in the specified direction?
@@ -1415,21 +1188,20 @@ bool IsMovementDirection(Actor* actor, std::variant<uint32_t, float>* args, uint
     //      => 3 = Back
     //      => 4 = Left"
 #ifdef DEBUG_TRACE_CONDITIONS
-    _MESSAGE("IsMovementDirection(%08x)", args[0]);
+    logger::info("IsMovementDirection({:08X})", a_args[0]);
 #endif
-    float fArg0;
-    if (!readGlobalVars(&fArg0, args, bmArgIsFloat, 1))
-    {
+
+    float arg;
+    if (!readGlobalVars(&arg, a_args, a_bmArgIsFloat, 1)) {
         return false;
     }
 
-    float actorMoveDir = 0.0;
-    if (RE::Actor_IsMoving(actor))
-    {
-        double move_angle = RE::Actor_GetMoveDirRelToFacing(actor);
+    float dir = 0.0;
+    if (RE::Actor_IsMoving(a_actor)) {
+        double angle = RE::Actor_GetMoveDirectionRelativeToFacing(a_actor);
         // Ensure movement angle (in radians) is within the range [0, 2*PI]
-        for (; move_angle < 0.0; move_angle += TWO_PI);
-        for (; move_angle > TWO_PI; move_angle -= TWO_PI);
+        for (; angle < 0.0; angle += TWO_PI);
+        for (; angle > TWO_PI; angle -= TWO_PI);
 
         // Get nearest boundary of circular quadrant containing this angle.
         // Ex. 1: If movement angle is 0.4 * PI (i.e. in 1st quadrant, closest
@@ -1440,14 +1212,15 @@ bool IsMovementDirection(Actor* actor, std::variant<uint32_t, float>* args, uint
         //        Second calc then evaluates as 1.0 + 1.0 = 2 (Right)
         // Ex. 2. For movement angle 1.1 * PI (i.e. in 3rd quadrant, closest
         //        to PI boundary), calcs evaluate to:
-        //        [1]:  y = ((1.1*PI / 2*PI) + 1/8) * 4.0 / 4.0 
+        //        [1]:  y = ((1.1*PI / 2*PI) + 1/8) * 4.0 / 4.0
         //                = fmodf(2.7, 4.0) = 2.7 - (2.7 / 4.0 = 0.675 => 0) * 4 = 2.7
         //        [2]:  2.0 + 1.0 = 3 (Back).
         // As expected.
-        float y = fmodf((float)((move_angle / TWO_PI) + 0.125) * 4.0, 4.0);
-        actorMoveDir = floorf(y) + 1.0;
+        float y = std::fmodf((static_cast<float>(angle / TWO_PI) + 0.125f) * 4.0f, 4.0f);
+        dir = std::floorf(y) + 1.0f;
     }
-    return (actorMoveDir == fArg0);
+
+    return (dir == arg);
 }
 
 // The DAR defined actor state functions
@@ -1512,4 +1285,5 @@ std::vector<std::pair<std::string, FuncInfo>> v
     { "IsMovementDirection",            FuncInfo{ &IsMovementDirection,            1, 1 } },  // 52
     // ==============================================================================================
 };
+
 std::unordered_map<std::string, FuncInfo> g_DARConditionFuncs(v.begin(), v.end());

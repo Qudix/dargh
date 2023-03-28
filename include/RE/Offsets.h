@@ -2,11 +2,11 @@
 //                              Offsets.h
 // ----------------------------------------------------------------------------
 // Part of the open-source Dynamic Animation Replacer (DARGH).
-// 
+//
 // Copyright (c) 2023 Nox Sidereum
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the “Software”), to deal
+// of this software and associated documentation files (the ï¿½Softwareï¿½), to deal
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is furnished
@@ -15,44 +15,22 @@
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
 //
-// THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// THE SOFTWARE IS PROVIDED ï¿½AS ISï¿½, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 // AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
-// 
+//
 // (The MIT License)
 // ============================================================================
+
 #pragma once
 
-#include "RE/A/Actor.h"
-#include "RE/B/BGSLocation.h"
-#include "RE/B/BSReadWriteLock.h"
-#include "RE/C/Calendar.h"
-#include "RE/H/hkbClipGenerator.h"
-#include "RE/H/hkbContext.h"
-#include "RE/S/Setting.h"
-#include "RE/S/SettingCollectionList.h"
-#include "RE/S/Sky.h"
-#include "RE/T/TESActorBase.h"
-#include "RE/T/TESDataHandler.h"
-#include "RE/T/TESFaction.h"
-#include "RE/T/TESForm.h"
-#include "RE/T/TESWorldSpace.h"
-
-namespace RE
+namespace RE::Offset
 {
-	extern TESDataHandler** g_dataHandler;
-	extern SettingCollectionList** g_iniSettingCollection;
-
-	typedef Setting* (* _SettingCollectionList_Get)(SettingCollectionList* list, const char* name);
-	extern _SettingCollectionList_Get SettingCollectionList_Get;
-
-	extern uint64_t VTBL_hkbCharacterStringData;
-	extern uint64_t VTBL_hkbProjectData;
-	extern uint64_t VTBL_hkbClipGenerator;
+	/*
 	extern uint64_t Unk00;
 	extern uint64_t hkbClipGenerator_Generate;
 	extern uint64_t g_AnimationFileManager;
@@ -61,87 +39,49 @@ namespace RE
 	extern uint64_t WeaponAnimGraphMgrHolder_Unk;
 	extern uint64_t SimpleAnimGraphMgrLoadingTask_Unk;
 
-	typedef uint64_t (* _ShowMsgBox)
-		(const char* message, uint64_t callbackYes, uint64_t callbackNo, uint64_t callbackCancel,
-	     uint64_t unk1, const char* butText, uint64_t unk2);
-	extern _ShowMsgBox showMessageBox;
-
-	typedef TESForm* (* _Game_GetForm)(uint32_t id);
-	extern _Game_GetForm Game_GetForm;
-
-	typedef uint64_t(* _Runtime_DynamicCast)(TESForm*, uint64_t, uint64_t, uint64_t, uint64_t);
-	extern _Runtime_DynamicCast Runtime_DynamicCast;
-
-	extern uint64_t RTTI_TESForm;
-	extern uint64_t RTTI_BGSKeywordForm;
-
-	typedef void (* _BSReadWriteLock_LockForRead)(BSReadWriteLock* lock);
-	extern _BSReadWriteLock_LockForRead BSReadWriteLock_LockForRead;
-
-	typedef void (* _BSReadWriteLock_UnlockRead)(BSReadWriteLock* lock);
-	extern _BSReadWriteLock_UnlockRead BSReadWriteLock_UnlockRead;
-
-	typedef int (* _ActorBase_GetSex)(TESActorBase* actorBase);   // returns -1 (None), 0 (Male) or 1 (Female)
-	extern _ActorBase_GetSex ActorBase_GetSex;
-
-	typedef bool (* _MagicTarget_HasMagicEffect)(MagicTarget*, TESForm*);
-	extern _MagicTarget_HasMagicEffect MagicTarget_HasMagicEffect;
-
-	typedef bool (* _MagicTarget_HasMagicEffectWithKeyword)(MagicTarget*, TESForm*, uint64_t);
-	extern _MagicTarget_HasMagicEffectWithKeyword MagicTarget_HasMagicEffectWithKeyword;
-
-	typedef bool (* _Actor_HasPerk)(Actor* actor, TESForm* perk);
-	extern _Actor_HasPerk Actor_HasPerk;
-
-	typedef bool (* _Actor_HasSpell)(Actor* actor, TESForm* spell);
-	extern _Actor_HasSpell Actor_HasSpell;
-
-	typedef bool (* _Actor_HasShout)(Actor* actor, TESForm* shout);
-	extern _Actor_HasShout Actor_HasShout;
-
-	typedef uint16_t(* _Actor_GetLevel)(Actor* actor);
-	extern _Actor_GetLevel Actor_GetLevel;
-
-	extern Calendar** g_theCalendar;
-
-	typedef float (* _Calendar_GetCurrentGameTime)(Calendar* calendar);
-	extern _Calendar_GetCurrentGameTime Calendar_GetCurrentGameTime;
-
-	extern float* g_gameHoursPerGameDay;
-
-	typedef Sky* (* _Sky_GetSingleton)(void);
-	extern _Sky_GetSingleton Sky_GetSingleton;
-
-	typedef bool (* _Actor_IsRunning)(Actor* actor);
-	extern _Actor_IsRunning Actor_IsRunning;
-
-	typedef bool (* _Actor_IsOnMount)(Actor* actor);
-	extern _Actor_IsOnMount Actor_IsOnMount;
-
-	typedef bool (* _Actor_IsInAir)(Actor* actor);
-	extern _Actor_IsInAir Actor_IsInAir;
-
-	typedef BGSLocation* (* _TESObjectREFR_GetCurrentLocation)(TESObjectREFR* refr);
-	extern _TESObjectREFR_GetCurrentLocation ObjectReference_GetCurrentLocation;
-
-	typedef TESWorldSpace* (* _TESObjectREFR_GetWorldspace)(TESObjectREFR*);
-	extern _TESObjectREFR_GetWorldspace TESObjectREFR_GetWorldSpace;
-
-	typedef int (* _Actor_GetFactionRank)(Actor* actor, TESFaction* faction, bool isPlayer);
-	extern _Actor_GetFactionRank Actor_GetFactionRank;
-
-	extern Actor** g_thePlayer;
-
-	typedef uint8_t (* _Actor_IsMoving)(Actor* actor);
-	extern _Actor_IsMoving Actor_IsMoving;
-
-	typedef double (* _Actor_GetMoveDirRelToFacing)(Actor* actor);
-	extern _Actor_GetMoveDirRelToFacing Actor_GetMoveDirRelToFacing;
-
 	typedef uint64_t (* _AnimationFileManager_Load)(uint64_t, hkbContext*, hkbClipGenerator*, uint64_t);
 	extern _AnimationFileManager_Load AnimationFileManager_Load;
+	*/
 
-	bool InitialiseOffsets();
-	bool DumpSpecificVersion();
-	void DumpOffsets();
+	/*
+	std::vector<std::tuple<void*, uint64_t, uint64_t>> skyrim_addr
+	{
+		// 2 trampolines: ----------------
+		{ &Unk00,                                        63846,       257  },     //   7  [0x00b371c0] => 0x00b371c0 + 0x101 = 0x00B372C1
+		{ &hkbClipGenerator_Generate,                    59253,       128  },     //   8  [0x00a42e50] => 0x00a42e50 + 0x80 = 0x00A42ED0
+		// -------------------------------
+
+		// Unused by DARGH; used by DAR (see entry 41 below):
+		{ &g_AnimationFileManager,                      407512,         0  },     //   9  [0x02fe6d60]
+
+		// 4 (unused) trampolines: ------
+		{ &QueuedRef_Unk,                                13034,       199  },     //  10  [0x001507b0] => 0x001507b0 + 0xc7 =  0x00150877
+		{ &TESObjectREFR_Unk,                            20103,       274  },     //  11  [0x002b6cf0] => 0x002b6cf0 + 0x112 = 0x002B6E02
+		{ &WeaponAnimGraphMgrHolder_Unk,                 32892,       313  },     //  12  [0x0050bc10] => 0x0050bc10 + 0x139 = 0x0050BD49
+		{ &SimpleAnimGraphMgrLoadingTask_Unk,            32918,       281  },     //  13  [0x0050cdd0] => 0x0050cdd0 + 0x119 = 0x0050CEE9
+		// ------------------------------
+
+		// Used for evaluating conditions for conditional dynamic animations: ----
+		{ &MagicTarget_HasMagicEffect,                   34517,         0  },     //  22  [0x00575370]
+		{ &MagicTarget_HasMagicEffectWithKeyword,        34518,         0  },     //  23  [0x00575400]
+		{ &Actor_HasPerk,                                37698,         0  },     //  24  [0x00632b00]
+		{ &Actor_HasSpell,                               38782,         0  },     //  25  [0x0066a950]
+		{ &Actor_HasShout,                               38783,         0  },     //  26  [0x0066a990]
+		{ &Actor_GetLevel,                               37334,         0  },     //  27  [0x0060ca10]
+		{ &g_theCalendar,                               400447,         0  },     //  28  [0x01f54780]
+		{ &Calendar_GetCurrentGameTime,                  36303,         0  },     //  29  [0x005d96e0]
+		{ &g_gameHoursPerGameDay,                       195681,         0  },     //  30  [0x0168f064]
+		{ &Actor_IsRunning,                              37234,         0  },     //  32  [0x00607590]
+		{ &Actor_IsOnMount,                              17965,         0  },     //  33  [0x00240740]
+		{ &Actor_IsInAir,                                37243,         0  },     //  34  [0x00607ae0]
+		{ &ObjectReference_GetCurrentLocation,           19812,         0  },     //  35  [0x002ad8e0]
+		{ &TESObjectREFR_GetWorldSpace,                  19816,         0  },     //  36  [0x002adb70]
+		{ &Actor_GetFactionRank,                         37676,         0  },     //  37  [0x006305b0]
+		{ &Actor_IsMoving,                               37953,         0  },     //  39  [0x00642130]
+		{ &Actor_GetMoveDirRelToFacing,                  37960,         0  },     //  40  [0x00642340]
+
+		// Use this to avoid deriving it via g_AnimFileManager VFT (which is what DAR does):
+		{ &AnimationFileManager_Load,                    63982,         0  }      //  41  [0x00B40D10]
+		// ====================================================================================================
+	};*/
 }

@@ -1,5 +1,5 @@
 // ============================================================================
-//                                Plugin.h
+//                         hkbAssetBundleStringData.h
 // ----------------------------------------------------------------------------
 // Part of the open-source Dynamic Animation Replacer (DARGH).
 //
@@ -25,12 +25,20 @@
 //
 // (The MIT License)
 // ============================================================================
+// For further info on Havok and the Havok Animation Studio, see
+//   http://web.archive.org/web/http://anarchy.cn/manual/12/HavokSdk_ProgrammersManual/index.html
+//   https://github.com/Bewolf2/projectanarchy
 
 #pragma once
 
-namespace Plugin
-{
-	static uint32_t MAX_ANIMATION_FILES{ 16384 };
+#include "RE/H/hkArray.h"
+#include "RE/H/hkStringPtr.h"
 
-	void HandleSKSEMessage(SKSE::MessagingInterface::Message* a_msg);
+namespace RE
+{
+	struct hkbAssetBundleStringData
+	{
+		hkStringPtr          bundleName;  // 00
+		hkArray<hkStringPtr> assetNames;  // 08 - Skyrim doesn't use these
+	};
 }

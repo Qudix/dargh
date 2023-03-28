@@ -2,11 +2,11 @@
 //                            Utilities.cpp
 // ----------------------------------------------------------------------------
 // Part of the open-source Dynamic Animation Replacer (DARGH).
-// 
+//
 // Copyright (c) 2023 Nox Sidereum
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the “Software”), to deal
+// of this software and associated documentation files (the ï¿½Softwareï¿½), to deal
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is furnished
@@ -15,21 +15,20 @@
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
 //
-// THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// THE SOFTWARE IS PROVIDED ï¿½AS ISï¿½, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 // AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
-// 
+//
 // (The MIT License)
 // ============================================================================
+
 #include "Utilities.h"
 
 #include <shlwapi.h>
-#include <filesystem>
-#include <sstream>
 
 const std::string WHITESPACE = " \t";
 
@@ -43,18 +42,6 @@ std::string trim(const std::string& s)
 	}
 	size_t posLast = s.find_last_not_of(WHITESPACE);
 	return s.substr(posStart, posLast - posStart + 1);
-}
-
-std::string getSkyrimDirectory()
-{
-	char path[MAX_PATH + 12];
-	std::string ret;
-
-	GetModuleFileNameA(NULL, path, MAX_PATH);
-	PathRemoveFileSpecA(path);
-	ret.assign(path);
-	ret.append("\\");
-	return ret;
 }
 
 bool startsWith(const std::string& str, const std::string& prefix)
@@ -83,10 +70,10 @@ bool isNumber(const std::string& s)
 bool findMatchingFiles(std::string& dirToSearch,
 	                   std::vector<std::string>& matches_out,
 	                   bool filterToExt, bool recursive,
-	                   std::string& ext, std::string subDir)
+	                   std::string ext, std::string subDir)
 {
 	HANDLE hFindFile;
-	struct _WIN32_FIND_DATAA FindFileData;
+	_WIN32_FIND_DATAA FindFileData;
 	std::string str01;
 	std::string str02;
 	std::string str03;
@@ -94,28 +81,27 @@ bool findMatchingFiles(std::string& dirToSearch,
 	std::string str05;
 	std::string str06;
 
+	logger::debug("searching for: {}", dirToSearch.c_str());
+
 	str04 = dirToSearch + "\\*";
 	hFindFile = FindFirstFileA(str04.c_str(), &FindFileData);
-	if (hFindFile == (HANDLE)-1)
-	{
+	if (hFindFile == INVALID_HANDLE_VALUE) {
 		return false;
 	}
-	do
-	{
-		if ((FindFileData.dwFileAttributes & 0x10) != 0)
-		{
+
+	do {
+		if (FindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
 			if (FindFileData.cFileName[0] != '.'
-				|| FindFileData.cFileName[1] 
-				&& (FindFileData.cFileName[1] != '.' 
+				|| FindFileData.cFileName[1]
+				&& (FindFileData.cFileName[1] != '.'
 					|| FindFileData.cFileName[2]))
 			{
-				if (!filterToExt)
-				{
+				if (!filterToExt) {
 					str01 = subDir + FindFileData.cFileName;
 					matches_out.push_back(str01);
 				}
-				if (recursive)
-				{
+
+				if (recursive) {
 					str05.assign(dirToSearch);
 					str05.append("\\");
 					str05.append(FindFileData.cFileName);
@@ -128,13 +114,11 @@ bool findMatchingFiles(std::string& dirToSearch,
 					str06.assign(ext);
 					str01.assign(str05);
 
-					findMatchingFiles(str01, matches_out, filterToExt, 
+					findMatchingFiles(str01, matches_out, filterToExt,
 						              recursive, str06, str03);
 				}
 			}
-		}
-		else if (filterToExt)
-		{
+		} else if (filterToExt) {
 			str01.assign(ext);
 			str06.assign(FindFileData.cFileName);
 			if (endsWith(str06, str01))
@@ -144,7 +128,9 @@ bool findMatchingFiles(std::string& dirToSearch,
 			}
 		}
 	} while (FindNextFileA(hFindFile, &FindFileData));
+
 	FindClose(hFindFile);
+
 	return true;
 }
 

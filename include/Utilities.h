@@ -25,11 +25,8 @@
 // 
 // (The MIT License)
 // ============================================================================
-#pragma once
-#include <string>
-#include <vector>
 
-std::string getSkyrimDirectory();
+#pragma once
 
 bool startsWith(const std::string& str, const std::string& prefix);
 
@@ -38,7 +35,7 @@ bool endsWith(const std::string& str, const std::string& suffix);
 bool isNumber(const std::string& s);
 
 bool findMatchingFiles(std::string& dirToSearch, std::vector<std::string>& matches_out,
-	                   bool filterToExt, bool recursive, std::string& ext, std::string subDir);
+	                   bool filterToExt, bool recursive, std::string ext, std::string subDir);
 
 std::string trim(const std::string& s);
 

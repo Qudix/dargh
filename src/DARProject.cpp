@@ -2,11 +2,11 @@
 //                            DARProject.cpp
 // ----------------------------------------------------------------------------
 // Part of the open-source Dynamic Animation Replacer (DARGH).
-// 
+//
 // Copyright (c) 2023 Nox Sidereum
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the “Software”), to deal
+// of this software and associated documentation files (the ï¿½Softwareï¿½), to deal
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is furnished
@@ -15,24 +15,20 @@
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
 //
-// THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// THE SOFTWARE IS PROVIDED ï¿½AS ISï¿½, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 // AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
-// 
+//
 // (The MIT License)
 // ============================================================================
+
 #include "DARProject.h"
 #include "Utilities.h"
 #include "Conditions.h"
-
-#include "RE/T/TESFile.h"
-
-#include <fstream>
-#include <algorithm>
 
 // Turn this on if you want to trace & debug DAR data loading.
 //#define DEBUG_TRACE_DAR_LOADING
@@ -58,8 +54,7 @@ struct modNameActorBaseId
 
 namespace DARGH
 {
-	hkInt16 getNewAnimIndex(DARProject* darProj,
-		                    hkInt16 from_hkx_index, Actor* actor)
+	int16_t getNewAnimIndex(DARProject* darProj, int16_t from_hkx_index, RE::Actor* actor)
 	{
 		// ====================================================================
 		//                        getNewAnimIndex
@@ -72,10 +67,10 @@ namespace DARGH
 		// mapping that doesn't return -1 and returns that index. If no
 		// mappings found or they all return -1, returns -1.
 		// ====================================================================
-		hkInt16 to_hkx_index;
+		int16_t to_hkx_index;
 
 		// Try to find the orig index.
-		auto& search = darProj->allLinks.find(from_hkx_index);
+		const auto search = darProj->allLinks.find(from_hkx_index);
 		if (search == darProj->allLinks.end())
 		{
 			// Not found
@@ -86,56 +81,53 @@ namespace DARGH
 		// data item in that map (over which we iterate in order from higher
 		// priority number to lower priority), that returns a valid index.
 #ifdef DEBUG_TRACE_CONDITION_EVAL
-		_MESSAGE("getNewAnimIndex: found potential mapping(s) for index %d",
-			from_hkx_index);
+		logger::info("getNewAnimIndex: found potential mapping(s) for index {}", from_hkx_index);
 #endif
 		std::map<int, LinkData*, std::greater<int>> all_links = search->second;
 		for (auto& link : all_links)
 		{
 #ifdef DEBUG_TRACE_CONDITION_EVAL
-			_MESSAGE("getNewAnimIndex: apply map with priority %d...?",
-				link.first);
+			logger::info("getNewAnimIndex: apply map with priority {}...?", link.first);
 #endif
 			auto& link_dat = link.second;
 			to_hkx_index = link_dat->getNewAnimIndex(actor);
 			if (to_hkx_index != -1)
 			{
 #ifdef DEBUG_TRACE_CONDITION_EVAL
-				_MESSAGE("  => yes, new anim index = %d", to_hkx_index);
+				logger::info("  => yes, new anim index = {}", to_hkx_index);
 #endif
 				return to_hkx_index;
 			}
 #ifdef DEBUG_TRACE_CONDITION_EVAL
-			_MESSAGE("  => no");
+			logger::info("  => no");
 #endif
 		}
 #ifdef DEBUG_TRACE_CONDITION_EVAL
-		_MESSAGE(" => no applicable mappings.");
+		logger::info(" => no applicable mappings.");
 #endif
 		return -1;
 	}
 
-	void loadDARMaps_ActorBase(DARProject& darProj,
-		                       TESDataHandler* dh, std::string darDir)
+	void loadDARMaps_ActorBase(DARProject& darProj, std::string darDir)
 	{
 		// ====================================================================
 		//            METHOD 1: Assignment depending on ActorBase
 		// --------------------------------------------------------------------
 		// Loads all valid DAR M1 animation file links for the given project.
 		// This data is loaded into darProj.actorBaseLinks.
-		// 
+		//
 		// Method 1 description from the DAR documentation:
-		// 
+		//
 		// " Animations placed in the following folder:
-		// 
+		//
 		//       meshes\actors\(project folder)\animations\
 		//       DynamicAnimationReplacer\(esp name)\(actor base id)\
 	    //      (animation folders and files)
 		//
 		//  (actor base id) must be 8 characters. First two characters are 00.
-		// 
+		//
 		//  E.g. mapping could be:
-		//   
+		//
 		//    meshes\actors\character\animations\1hm_attackpowerleft.hkx =>
 		//      meshes\actors\character\animations\DynamicAnimationReplacer\
 		//        Skyrim.esm\00000007\1hm_attackpowerleft.hkx                 "
@@ -143,14 +135,15 @@ namespace DARGH
 
 		// Get (esp name) subfolders.
 		std::vector<std::string> modNames;
-		if (!findMatchingFiles(darDir, modNames, 0, 0,
-			                   std::string(""), std::string("")))
+		if (!findMatchingFiles(darDir, modNames, 0, 0, ""s, ""s))
 		{
-			_WARNING("couldn't find %s\\animations\\DynamicAnimationReplacer",
-				      darProj.projFolder.c_str());
+			logger::warn("couldn't find {}\\animations\\DynamicAnimationReplacer",
+				      darProj.projFolder);
 			// No subfolders found. No mappings to load for this project.
 			return;
 		}
+
+		auto dh = RE::TESDataHandler::GetSingleton();
 
 		// Iterate over the matches, find those that are ESP, ESM or ESL,
 		// determine if they are active, and if so, store the mod info data.
@@ -166,24 +159,21 @@ namespace DARGH
 			}
 
 			// Ok, this is an ESP, ESM or ESL. Is it active?
-			const TESFile* modinfo = LookupModByName(dh, modName.c_str());
-			if (!modinfo)
-			{
+			auto modinfo = dh->LookupModByName(modName.c_str());
+			if (!modinfo) {
 				// WARNING: The mod is not active. Don't load the mappings.
-				_WARNING("esp file not loaded: %s", modName.c_str());
+				logger::warn("esp file not loaded: {}", modName);
 				continue;    // Skip to the next (esp name) subfolder.
 			}
 
 			// Yes mod is active. Store (mod_name, index) tuple in modInfoMap,
 			// as information we'll later use to recreate the complete form ID.
 			modIndexAndIsESL modDat;
-			modDat.isESL = ((modinfo->recordFlags & 0x200) != 0);
+			modDat.isESL = modinfo->IsLight();
 			modDat.modIndex =
-				(modinfo->compileIndex << 24) + 
+				(modinfo->compileIndex << 24) +
 				(modinfo->smallFileCompileIndex << 12);
-			modInfoMap.insert(
-				std::pair<std::string, modIndexAndIsESL>(modName, modDat)
-			);
+			modInfoMap.insert({ modName, modDat });
 		}
 
 		// Iterate over the valid (esp name) subfolders stored in
@@ -197,8 +187,7 @@ namespace DARGH
 
 			// Get the (actor base id) subfolders.
 			std::vector<std::string> sActorBaseIDs;
-			findMatchingFiles(espDir, sActorBaseIDs, 0, 0,
-				              std::string(""), std::string(""));
+			findMatchingFiles(espDir, sActorBaseIDs, 0, 0, ""s, ""s);
 			std::unordered_map<std::string, modNameActorBaseId> mActorBaseIDs;
 			for (auto& sActorBaseID : sActorBaseIDs)
 			{
@@ -217,19 +206,19 @@ namespace DARGH
 				// runtime information (mod index and light mod index) with the
 				// static reference provided by the user. All Form IDs are 4
 				// bytes (eight characters in hex format).
-				// 
+				//
 				// For .esm and .esp mods, the complete form ID has the
 				// structure xx yy yy yy. Where the first two digits xx are
 				// determined at runtime - they are the load index of the mod.
 				// FF is reserved for dynamically allocated IDs.  The other
 				// digits yy yy yy are static and provided by the user. So
 				// the user could write "0xyyyyyy" or "0x00yyyyyy".
-				// 
+				//
 				// For .esl mods, the complete form ID has the structure
 				// FE xxx yyy. Where xxx is the light mod load index and yyy is
 				// provided by the user. In this case user could write "0xyyy"
 				// or "0x00000yyy".
-				// 
+				//
 				// Useful references at:
 				//   https://en.uesp.net/wiki/Skyrim:Form_ID and
 				//   https://skyrim.fandom.com/wiki/ID
@@ -245,10 +234,7 @@ namespace DARGH
 					dat.modName = modInfo.first;
 					dat.actorBaseID = iActorBaseID;
 					dat.modIndex = modInfo.second.modIndex;
-					mActorBaseIDs.insert(
-						std::pair<std::string, modNameActorBaseId>
-						(sActorBaseID, dat)
-					);
+					mActorBaseIDs.insert({ sActorBaseID, dat });
 				}
 			}
 
@@ -261,13 +247,11 @@ namespace DARGH
 				//     "data\meshes\actors\(project folder)\animations\
 				//      DynamicAnimationReplacer\(esp name)\(actor base id)"
 				std::vector<std::string> hkxFiles;
-				findMatchingFiles(actorBaseDir, hkxFiles, 1, 1,
-					              std::string(".hkx"), std::string(""));
+				findMatchingFiles(actorBaseDir, hkxFiles, 1, 1, ".hkx"s, ""s);
 				for (auto& hkxFile : hkxFiles)
 				{
 					std::string fromHkx = "Animations\\" + hkxFile;
-					std::transform(fromHkx.begin(), fromHkx.end(),
-						           fromHkx.begin(), tolower);
+					std::transform(fromHkx.begin(), fromHkx.end(), fromHkx.begin(), [](uint8_t c) { return static_cast<uint8_t>(std::tolower(c)); });
 					// ... i.e. looks like:
 					//     "animations\<hkx file>"
 					// all lower case, what to map FROM
@@ -282,14 +266,14 @@ namespace DARGH
 					// not lower-cased, what to map TO
 
 					// Store the link.
-					// 
+					//
 					// We generate the complete actorBaseID by xoring the mod
 					// index with the partial base ID provided by the user.
-					// 
+					//
 					// E.g. if Dawnguard.esm is the third mod in the load order
 					// and the user provides the base ID for Serana we would
 					// have something like
-					//        
+					//
 					//   02000000 xor 00002B6C = 02002B6C
 					//
 					// which is the complete form ID
@@ -302,9 +286,9 @@ namespace DARGH
 					darProj.actorBaseLinks.push_back(actorBaseLink);
 
 #ifdef DEBUG_TRACE_DAR_LOADING
-					_MESSAGE("  M1: stored link: '%s' => '%s' (%d)",
-						     actorBaseLink.from_hkx_file.c_str(),
-						     actorBaseLink.to_hkx_file.c_str(),
+					logger::info("  M1: stored link: '{}' => '{}' ({})",
+						     actorBaseLink.from_hkx_file,
+						     actorBaseLink.to_hkx_file,
 						     actorBaseLink.actorBaseID);
 #endif
 				}
@@ -312,20 +296,19 @@ namespace DARGH
 		}
 	}
 
-	void loadDARMaps_Conditional(DARProject& darProj,
-		                         TESDataHandler* dh, std::string darDir)
+	void loadDARMaps_Conditional(DARProject& darProj, std::string darDir)
 	{
 		// ====================================================================
 		//         METHOD 2: Assignment depending on custom conditions
 		// --------------------------------------------------------------------
 		// Loads all valid DAR M2 animation file links for the given project.
 		// The data is loaded into darProj.conditionLinks.
-		// 
+		//
 		// Method 2 description from the DAR documentation:
-		// 
+		//
 		// " Set the conditions yourself. Assigns animations accordingly. Place
 		//   the animation files and _conditions.txt in the following folder.
-		// 
+		//
 		//      meshes\actors\(project folder)\animations\
 		//      DynamicAnimationReplacer\_CustomConditions\<Priority>\
 	    //      (animation folders and files and _conditions.txt)
@@ -334,42 +317,42 @@ namespace DARGH
 		//   -2,147,483,648 to 2,147,483,647. The higher the number, the higher
 		//   the priority. Assignments that depend on ActorBase mentioned above
 		//   have a priority 0.
-		// 
+		//
 		//   _conditions.txt is a file with a text format named _conditions.
 		//   Specify functions to set conditions in this file. Multiple
 		//   conditions can be linked with AND and OR. You can use NOT to
 		//   negate a condition.
-		// 
+		//
 		//     (NOT) Function name("esp name" | formID, ...) (AND or OR)
-		// 
+		//
 		//   The esp name is enclosed in "". Prefix with 0x to specify the
 		//   FormID in hexadecimal. Remove or replace the first two digits
-		//   indicating the load order. 
-		//      
+		//   indicating the load order.
+		//
 		//     Example: 0xAA123456 -> 0x00123456
-		// 
+		//
 		//   Specify esp name and FormID as the arguments of the function as
 		//   follows.
-		//   
+		//
 		//     IsEquippedRight(Form item) ->
 		//         IsEquippedRight("aaa.esp" | 0x00123456)
-		// 
+		//
 		//   It is also possible to specify the number directly to
 		//   GlobalVariable.
-		//     
+		//
 		//     IsEquippedRightType(GlobalVariable type) ->
 		//         IsEquippedRightType(3)
-		// 
+		//
 		//   Example:
-		//    
+		//
 		//     Actors who have an iron dagger equipped to the right hand and
 		//     are in the exterior.
-		// 
+		//
 		//	     IsEquippedRight("Skyrim.esm" | 0x0001397E) AND
 		//       NOT IsInInterior()
-		// 
+		//
 		//   Logical operation is performed in the same way as CK.
-		// 
+		//
 		//     (A || B) && C
 		//      = A || B && C                                                 "
 		// ====================================================================
@@ -388,6 +371,8 @@ namespace DARGH
 			// No subfolders found. No mappings to load for this project.
 			return;
 		}
+
+		auto dh = RE::TESDataHandler::GetSingleton();
 
 		// We have at least one subfolder.
 		for (auto& sPriority : sPriorities)
@@ -433,8 +418,8 @@ namespace DARGH
 			{
 				// *** WARNING ***
 				// Can't open the conditions file.
-				_WARNING("couldn't find %s\\animations\\DynamicAnimationReplacer\\_CustomConditions\\%s\\_conditions.txt",
-					darProj.projFolder.c_str(), sPriority);
+				logger::warn("couldn't find {}\\animations\\DynamicAnimationReplacer\\_CustomConditions\\{}\\_conditions.txt",
+					darProj.projFolder, sPriority);
 				continue;    //  Skip to next priority subfolder.
 			}
 
@@ -492,7 +477,7 @@ namespace DARGH
 				std::size_t posRB = chomped_line.find_first_of(")");
 
 				// Look up the function address from the name.
-				auto& funcInfoPair = g_DARConditionFuncs.find(funcName);
+				const auto funcInfoPair = g_DARConditionFuncs.find(funcName);
 				if (funcInfoPair == g_DARConditionFuncs.end()
 					|| posRB == std::string::npos || posRB < posLB)
 				{
@@ -595,7 +580,7 @@ namespace DARGH
 							// ------------------------------------------------
 							//    Argument should be "esp name" | formID
 							// ------------------------------------------------
-							// Note for newbies: Global variables are also 
+							// Note for newbies: Global variables are also
 							// specified with formIDs. For more on formIDs and
 							// how to recreate them, see note earlier above.
 							// ------------------------------------------------
@@ -643,21 +628,19 @@ namespace DARGH
 							// Ok, this is an ESP, ESM or ESL. Is it active?
 							uint32_t modIndex = 0;
 							bool bIsESL = false;
-							const TESFile* modinfo =
-								LookupModByName(dh, espName.c_str());
+							auto modinfo = dh->LookupModByName(espName);
 							if (!modinfo)
 							{
 								// Mod is not active.
 								// *DON'T* break... these cases actually do
 								// still get added to the conditions list,
 								// with a special flag.
-								_WARNING("esp file not loaded: %s",
-									     espName.c_str());
+								logger::warn("esp file not loaded: {}", espName);
 								bESPNotLoaded = true;
 							}
 							else
 							{
-								bIsESL = ((modinfo->recordFlags & 0x200) != 0);
+								bIsESL = modinfo->IsLight();
 								modIndex =
 									(modinfo->compileIndex << 24) +
 									(modinfo->smallFileCompileIndex << 12);
@@ -762,9 +745,9 @@ namespace DARGH
 			if (lineWithError.size() > 0)
 			{
 				// Yes. Log the error and skip this conditions file.
-				_ERROR("error: %s\\animations\\DynamicAnimationReplacer\\_CustomConditions\\%s\\_conditions.txt",
-					   darProj.projFolder.c_str(), sPriority);
-				_ERROR("   %s", lineWithError.c_str());
+				logger::error("error: {}\\animations\\DynamicAnimationReplacer\\_CustomConditions\\{}\\_conditions.txt",
+					   darProj.projFolder, sPriority);
+				logger::error("   {}", lineWithError);
 				continue;    //  Skip to next priority subfolder.
 			}
 
@@ -779,7 +762,7 @@ namespace DARGH
 				std::string fromHkx =
 					"Animations\\" + hkxFile;
 				std::transform(fromHkx.begin(), fromHkx.end(),
-					           fromHkx.begin(), tolower);
+					           fromHkx.begin(), [](uint8_t c) { return static_cast<uint8_t>(std::tolower(c)); });
 				// ... i.e.
 				//     "animations\\<hkx file>"
 				// all lower case, what to map FROM.
@@ -801,12 +784,12 @@ namespace DARGH
 
 				// Debug message:
 #ifdef DEBUG_TRACE_DAR_LOADING
-				_MESSAGE("  M2: stored link: '%s' => '%s' (priority: %d)",
-					     conditionLink.from_hkx_file.c_str(),
-					     conditionLink.to_hkx_file.c_str(),
+				logger::info("  M2: stored link: '{}' => '{}' (priority: {})",
+					     conditionLink.from_hkx_file,
+					     conditionLink.to_hkx_file,
 					     conditionLink.priority);
 #endif
-			} // for (auto& hkxFile : hkxFiles)		
+			} // for (auto& hkxFile : hkxFiles)
 		} // for (auto& sPriority : sPriorities)
 	}
 }
