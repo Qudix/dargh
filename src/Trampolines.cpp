@@ -626,8 +626,7 @@ struct AnimationLoaderHook
 		//      what I'm now doing.
 
 		auto& trampoline = SKSE::GetTrampoline();
-		auto ret = trampoline.write_branch<6>(call.address(), trampoline.allocate(code));
-		logger::info("ret: {:#x}", ret);
+		trampoline.write_branch<6>(call.address(), trampoline.allocate(code));
 
 		return true;
 	}
