@@ -1,7 +1,7 @@
 #pragma once
 
 #include "RE/A/ActorEx.h"
-#include "RE/A/AnimationFileManager.h"
+#include "RE/A/AnimationFileManagerSingleton.h"
 #include "RE/C/CalendarEx.h"
 #include "RE/H/hkbAnimationBindingSet.h"
 #include "RE/H/hkbAssetBundleStringData.h"
