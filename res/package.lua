@@ -117,14 +117,15 @@ rule("package")
                     local cdef_deploy_root = _parse_str(a_target, cdef.deploy[1], true)
                     print(cdef_deploy_root)
                     if os.exists(cdef_deploy_root) then
-                        local cdef_deploy_dest = _parse_str(a_target, cdef.deploy[2] or "", true)
+                        local cdef_deploy_dest = path.join(cdef_deploy_root, _parse_str(a_target, cdef.deploy[2] or "", true))
                         os.mkdir(cdef_deploy_dest)
+                        print(cdef_deploy_dest)
                         for _, fdef in pairs(cdef.files) do
                             local root = path.absolute(_parse_str(a_target, fdef[1], true))
                             local src = path.join(root, _parse_str(a_target, fdef[2], true))
-                            local deploy = path.join(cdef_deploy_root, cdef_deploy_dest)
-                            local dest = path.join(deploy, _parse_str(a_target, fdef[3] or "", true))
+                            local dest = path.join(cdef_deploy_dest, _parse_str(a_target, fdef[3] or "", true))
                             os.mkdir(dest)
+                            print(dest)
                             os.trycp(src, dest, { rootdir = root })
                         end
                     end
