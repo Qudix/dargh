@@ -1,5 +1,8 @@
 #pragma once
 
+#include "RE/H/hkArray.h"
+#include "RE/H/hkStringPtr.h"
+
 namespace RE
 {
 	class hkbProjectStringData : public hkReferencedObject
