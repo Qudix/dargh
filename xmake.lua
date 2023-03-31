@@ -31,9 +31,9 @@ target("dargh")
     })
 
     add_files("src/**.cpp")
-    add_headerfiles("include/**.h")
-    add_includedirs("include")
-    set_pcxxheader("include/PCH.h")
+    add_headerfiles("src/**.h")
+    add_includedirs("src")
+    set_pcxxheader("src/PCH.h")
 
     add_rules("package", {
         ["@{target}"] = {
