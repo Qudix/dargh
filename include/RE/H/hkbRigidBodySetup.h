@@ -14,6 +14,7 @@ namespace RE
             kFixed,
         };
 
+        // members
         std::uint32_t                       collisionFilterInfo;  // 00
         stl::enumeration<Type, std::int8_t> type;                 // 04
         hkbShapeSetup                       shapeSetup;           // 05

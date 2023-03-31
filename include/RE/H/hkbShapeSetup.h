@@ -12,6 +12,7 @@ namespace RE
 			kFile,
 		};
 
+		// members
 		float                               capsuleHeight;  // 00
 		float                               capsuleRadius;  // 04
 		hkStringPtr                         fileName;       // 08

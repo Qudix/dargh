@@ -36,7 +36,7 @@
 // Turn this on if you want to trace & debug animation condition evaluation
 // (CAUTION: only use for debugging - this will generate large dargh.log files
 //  and degrade performance)
-// #define DEBUG_TRACE_CONDITION_EVAL
+//#define DEBUG_TRACE_CONDITION_EVAL
 
 // Temporary structures used when reading in the DAR data.
 struct modIndexAndIsESL
@@ -71,8 +71,7 @@ namespace DARGH
 
 		// Try to find the orig index.
 		const auto search = darProj->allLinks.find(from_hkx_index);
-		if (search == darProj->allLinks.end())
-		{
+		if (search == darProj->allLinks.end()) {
 			// Not found
 			return -1;
 		}

@@ -28,8 +28,8 @@
 
 #include "DebugUtils.h"
 
-/*
-void dumpBytes(const void* a_ptr, std::size_t a_bytes)
+
+void dumpBytes(char* a_ptr, std::size_t a_nbytes)
 {
 	// nbytes should be a multiple of 8
 	// Print in form
@@ -40,13 +40,18 @@ void dumpBytes(const void* a_ptr, std::size_t a_bytes)
 		return;
 	}
 
-	for (std::size_t i = 0; i < a_bytes; i += 8) {
-		auto addr = fmt::format("{:08x} : ", a_ptr);
+	std::string s1;
+	std::string s2;
+	char buf[64];
+	for (int i = 0; i < a_nbytes; i += 8) {
+		sprintf_s(buf, sizeof(buf), "%08x : ", stl::unrestricted_cast<uint32_t>(a_ptr));
+		s1.assign(buf);
+		s2 = "";
 		for (int j = 0; j < 8; j++, a_ptr++) {
-			sprintf_s(buf, sizeof(buf), " %02x", (uint8_t)*a_ptr);
+			sprintf_s(buf, sizeof(buf), " %02x", static_cast<uint8_t>(*a_ptr));
 			s1.append(buf);
 			if (*a_ptr > 31 && *a_ptr < 127) {
-				sprintf_s(buf, sizeof(buf), " %c", (uint8_t)*a_ptr);
+				sprintf_s(buf, sizeof(buf), " %c", static_cast<uint8_t>(*a_ptr));
 				s2.append(buf);
 			} else {
 				s2 += "  ";
@@ -54,9 +59,9 @@ void dumpBytes(const void* a_ptr, std::size_t a_bytes)
 		}
 
 		s1 += s2;
-		logger::info(s1.c_str());
+		logger::info("{}", s1);
 	}
-}*/
+}
 
 void dumpHkArrayStringPtr(std::string a_header, RE::hkArray<RE::hkStringPtr> a_strings)
 {

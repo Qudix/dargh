@@ -32,7 +32,7 @@
 // Turn this on if you want to trace & debug the hooks
 // (CAUTION: only use for debugging - this will generate large dargh.log files
 //  and degrade performance)
-#define DEBUG_TRACE_HOOKS
+//#define DEBUG_TRACE_HOOKS
 
 // HOOK 1: finish constructor for hkbCharacterStringData
 uint64_t hkbCharacterStringData_fctor_Orig;
@@ -55,7 +55,7 @@ void cacheModifiedCharStringData(RE::hkbCharacterStringData* a_hkbCharStringData
 	g_animHashmap.insert({ a_hkbCharStringData, &a_hkbCharStringData->animationNames });
 }
 
-struct hkbCharacterStringData
+struct hkbCharacterStringDataHook
 {
 	static void dtor(RE::hkbCharacterStringData* a_this, RE::hkFinishLoadedObjectFlag a_flag)
 	{
@@ -75,7 +75,7 @@ struct hkbCharacterStringData
 			auto animationNames = search->second;
 			a_this->animationNames._data = animationNames->_data;
 			a_this->animationNames._size = animationNames->_size;
-			// _capacityAndFlags?
+			a_this->animationNames._capacityAndFlags = animationNames->_capacityAndFlags;
 
 			// Clear the entry in the map.
 			g_animHashmap.erase(search);
@@ -101,7 +101,7 @@ struct hkbCharacterStringData
 	}
 };
 
-struct hkbProjectData
+struct hkbProjectDataHook
 {
 	static void dtor(RE::hkbProjectData* a_this, RE::hkFinishLoadedObjectFlag a_flag)
 	{
@@ -142,7 +142,7 @@ struct hkbProjectData
 	}
 };
 
-struct hkbClipGenerator
+struct hkbClipGeneratorHook
 {
 	static void Activate(RE::hkbClipGenerator* a_this, RE::hkbContext* a_context)
 	{
@@ -154,7 +154,7 @@ struct hkbClipGenerator
 		logger::info("========= HOOK 3: hkbClipGenerator::Activate IN ========");
 #endif
 
-		std::int16_t origIndex = a_this->animationBindingIndex;
+		std::int16_t origIndex = a_this->animationBindingIndex; // CommonLibSSE offset for this member is wrong, fix it upstream (06C -> 070)
 		if (origIndex == -1) {
 			return _Activate(a_this, a_context);
 		}
@@ -205,9 +205,9 @@ bool install_hooks()
 	// for 1.6.659 (GOG edition). They are intended to facilitate basic
 	// sanity checks.
 
-	hkbCharacterStringData::Install();
-	hkbProjectData::Install();
-	hkbClipGenerator::Install();
+	hkbCharacterStringDataHook::Install();
+	hkbProjectDataHook::Install();
+	hkbClipGeneratorHook::Install();
 
 	logger::info("Successfully installed hooks.");
 

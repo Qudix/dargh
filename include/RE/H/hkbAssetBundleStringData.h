@@ -38,6 +38,7 @@ namespace RE
 {
 	struct hkbAssetBundleStringData
 	{
+		// members
 		hkStringPtr          bundleName;  // 00
 		hkArray<hkStringPtr> assetNames;  // 08 - Skyrim doesn't use these
 	};

@@ -25,9 +25,10 @@
 //
 // (The MIT License)
 // ============================================================================
+
 #pragma once
 
-//void dumpBytes(char* a_ptr, int32_t a_nbytes);
+void dumpBytes(char* a_ptr, std::size_t a_nbytes);
 void dumpHkArrayStringPtr(std::string a_header, RE::hkArray<RE::hkStringPtr> a_strings);
 void dumpHkArrayAssetBundle(std::string a_header, RE::hkArray<RE::hkbAssetBundleStringData> a_bundles);
 void dumpHkArrayFileNameMeshNamePair(std::string a_header, RE::hkArray<RE::hkbCharacterStringData::FileNameMeshNamePair> a_pairs);

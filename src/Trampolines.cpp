@@ -31,14 +31,14 @@
 #include "DARProjectRegistry.h"
 #include "DARLink.h"
 #include "Plugin.h"
-//#include "DebugUtils.h"
+#include "DebugUtils.h"
 
 #include <xbyak/xbyak.h>
 
 // Turn this on if you want to trace & debug the trampolines
 //  (CAUTION: only use for debugging - this will generate large dargh.log files
 //            and degrade performance)
-#define DEBUG_TRACE_TRAMPOLINES
+//#define DEBUG_TRACE_TRAMPOLINES
 
 // ============================================================================
 //                         FUNCTION SIGNATURES
@@ -286,14 +286,12 @@ namespace GenAnimationHook
 						//        (2) the M2 remapped animation file names
 						//        (3) the original animation file names
 						// ------------------------------------------------------------------------------
-						if (szAnimNames_Orig < Plugin::MAX_ANIMATION_FILES)
-						{
+						if (szAnimNames_Orig < Plugin::MAX_ANIMATION_FILES) {
 							darProj.allLinks.clear();
 
 							char** datAnimNames_New =
 								(char**)operator new(8ui64 * Plugin::MAX_ANIMATION_FILES);
-							if (szAnimNames_New >= Plugin::MAX_ANIMATION_FILES)
-							{
+							if (szAnimNames_New >= Plugin::MAX_ANIMATION_FILES) {
 								// Put empty strings in the new hkArray, but we won't actually
 								// copy in any new animation remappings as there are not enough slots to
 								// include all of them (we only do all or none).
@@ -304,9 +302,7 @@ namespace GenAnimationHook
 									*animName_New = (char*)operator new(1);
 									strcpy_s(*animName_New, 1, "");
 								}
-							}
-							else
-							{
+							} else {
 								// ==============================================
 								//      1. COPY ACTOR BASE MAPPINGS (M1)
 								// ==============================================
@@ -315,17 +311,14 @@ namespace GenAnimationHook
 									// Copy all non-null animation names from our M1 vector into our new hkArray.
 									const char* toHkxFile_M1 =
 										m1data_vec.at(i).ActorBaseLink->to_hkx_file.c_str();
-									if (toHkxFile_M1)
-									{
+									if (toHkxFile_M1) {
 										// Create a new string, copy the TO animation name from the
 										// m1 vector into it, then stash the pointer in the new array.
 										size_t sz = strlen(toHkxFile_M1);
 										char* toHkxFile_M1_dup = (char*)operator new(sz + 1);
 										strcpy_s(toHkxFile_M1_dup, sz + 1, toHkxFile_M1);
 										datAnimNames_New[i] = toHkxFile_M1_dup;
-									}
-									else
-									{
+									} else {
 										// No animation name to remap to, so stash a NULL in the new array.
 										datAnimNames_New[i] = 0;
 									}
@@ -338,25 +331,20 @@ namespace GenAnimationHook
 									// Does the revised anim index already exist in our link data map for this project?
 									// I.e. have we already stored M1 mappings to this index?
 									const auto search = darProj.allLinks.find(fromAnimIndex_rev);
-									if (search == darProj.allLinks.end())
-									{
+									if (search == darProj.allLinks.end()) {
 										// --------------------------------------------------------------------
 										// Revised FROM animation index was NOT found in the project hash map.
 										// --------------------------------------------------------------------
 										// Store the relevant data in a new BaseLinkData object.
 										BaseLinkData* oBLinkData = new BaseLinkData();
-										oBLinkData->allLinks.insert(
-											std::pair(m1data_vec[i].ActorBaseLink->actorBaseID, i)
-										);
+										oBLinkData->allLinks.insert({ m1data_vec[i].ActorBaseLink->actorBaseID, i });
 
 										// Create an ordered map, with <priority> => <BaseLinkData object>
 										// BaseLinkData always has a priority of 0.
 										std::map<int, LinkData*, std::greater<int>> oMap;
 										oMap.insert(std::pair<int, LinkData*>(0, oBLinkData));
 										darProj.allLinks.insert({ fromAnimIndex_rev, oMap });
-									}
-									else
-									{
+									} else {
 										// --------------------------------------------------------------------
 										// Revised FROM animation index WAS found in the project hash map.
 										// --------------------------------------------------------------------
@@ -365,9 +353,7 @@ namespace GenAnimationHook
 										// the map (if not next line will throw exception), with priority of 0.
 										BaseLinkData* oBLinkData =
 											dynamic_cast<BaseLinkData*>(search->second.at(0));
-										oBLinkData->allLinks.insert(
-											std::pair(m1data_vec[i].ActorBaseLink->actorBaseID, i)
-										);
+										oBLinkData->allLinks.insert({ m1data_vec[i].ActorBaseLink->actorBaseID, i });
 									}
 								} // for (uint16_t i = 0; i < m1data.size(); ++i)
 
@@ -376,22 +362,18 @@ namespace GenAnimationHook
 								// ==============================================
 								uint16_t startIndex = static_cast<uint16_t>(m1data_vec.size());
 								uint16_t destIndex;
-								for (uint16_t i = 0; i < m2data_vec.size(); i++)
-								{
+								for (uint16_t i = 0; i < m2data_vec.size(); i++) {
 									destIndex = startIndex + i;
 									const char* toHkxFile_M2 =
 										m2data_vec.at(i).ConditionLink->to_hkx_file.c_str();
-									if (toHkxFile_M2)
-									{
+									if (toHkxFile_M2) {
 										// Create a new string, copy the TO animation name from the
 										// m2 vector into it, then stash the pointer in the new array.
 										size_t sz = strlen(toHkxFile_M2);
 										char* toHkxFile_M2_dup = (char*)operator new(sz + 1);
 										strcpy_s(toHkxFile_M2_dup, sz + 1, toHkxFile_M2);
 										datAnimNames_New[destIndex] = toHkxFile_M2_dup;
-									}
-									else
-									{
+									} else {
 										// No animation name to remap to, so stash a NULL in the new array.
 										datAnimNames_New[destIndex] = 0;
 									}
@@ -406,8 +388,7 @@ namespace GenAnimationHook
 									// Does the new anim index already exist in our link data map for this project?
 									// I.e. have we already stored M2 mappings to this index?
 									const auto search = darProj.allLinks.find(fromAnimIndex_rev);
-									if (search == darProj.allLinks.end())
-									{
+									if (search == darProj.allLinks.end()) {
 										// --------------------------------------------------------------------
 										// Revised FROM animation index was NOT found in the project hash map.
 										// --------------------------------------------------------------------
@@ -422,14 +403,9 @@ namespace GenAnimationHook
 										// ConditionLinkData objects should appear earlier when iterating
 										// over the map).
 										std::map<int, LinkData*, std::greater<int>> oMap;
-										oMap.insert(std::pair(priority, (LinkData*)oCLinkData));
-										darProj.allLinks.insert(
-											std::pair<uint32_t, std::map<int, LinkData*, std::greater<int>>>
-											(fromAnimIndex_rev, oMap)
-										);
-									}
-									else
-									{
+										oMap.insert({ priority, (LinkData*)oCLinkData });
+										darProj.allLinks.insert({ fromAnimIndex_rev, oMap });
+									} else {
 										// --------------------------------------------------------------------
 										// Revised FROM animation index WAS found in the project hash map.
 										// --------------------------------------------------------------------
@@ -441,10 +417,8 @@ namespace GenAnimationHook
 										// Retrieve the existing ordered map, then add the ConditionLinkData
 										// object to it.
 										std::map<int, LinkData*, std::greater<int>>& oMap = search->second;
-										const auto [it2, success2] =
-											oMap.insert({ priority, (LinkData*)oCLinkData });
-										if (!success2 && !g_ShownConditionError)
-										{
+										const auto [it2, success2] = oMap.insert({ priority, (LinkData*)oCLinkData });
+										if (!success2 && !g_ShownConditionError) {
 											g_ShownConditionError = true;
 											logger::error("couldn't add conditions");
 										}
@@ -517,7 +491,7 @@ namespace GenAnimationHook
 	bool Install()
 	{
 		logger::info("Installing Trampoline 1: GenAnimationHook...");
-		REL::Relocation<std::uintptr_t> unk00{ RELOCATION_ID(0, 63846), 0x101 }; //TODO: SE ID
+		REL::Relocation<std::uintptr_t> unk00{ RELOCATION_ID(0, 63846), 0x101 }; //TODO: SE function seems different?
 
 		Code code{ unk00.address(), stl::unrestricted_cast<std::uintptr_t>(Hook)};
 		code.ready();
@@ -542,7 +516,7 @@ namespace GenAnimationHook
 //                    CODE RELATING TO TRAMPOLINE 2
 // ============================================================================
 
-namespace AnimationLoaderHook
+struct AnimationLoaderHook
 {
 	struct Code : Xbyak::CodeGenerator
 	{
@@ -560,14 +534,14 @@ namespace AnimationLoaderHook
 		}
 	};
 
-	void Hook(uint64_t a_arg1, RE::hkbContext* a_context, RE::hkbClipGenerator* a_arg3, uint64_t a_arg4)
+	static void Hook(RE::AnimationFileManagerSingleton* a_this, RE::hkbContext* a_context, RE::hkbClipGenerator* a_clipGenerator, uint64_t a_arg3)
 	{
 		// --------------------------------------------------------------------------------
 		// Argument types here (unaltered from original) are:
-		//      a1 - AnimationFileManagerSingleton object (this)   (VFT:  0x4182FDA0)
-		//      a2 - hkbContext object
-		//      a3 - hkbClipGenerator object                       (VFT:  0x41809EF8)
-		//      a4 - always 0
+		//      a_arg0 - AnimationFileManagerSingleton object (this)   (VFT:  0x4182FDA0)
+		//      a_arg1 - hkbContext object
+		//      a_arg2 - hkbClipGenerator object                       (VFT:  0x41809EF8)
+		//      a_arg3 - always 0
 		// --------------------------------------------------------------------------------
 
 #ifdef DEBUG_TRACE_TRAMPOLINES
@@ -576,7 +550,7 @@ namespace AnimationLoaderHook
 		logger::info("-----------------------------------------------------------------");
 #endif
 
-		uint16_t origIndex = a_arg3->animationBindingIndex;
+		uint16_t origIndex = a_clipGenerator->animationBindingIndex;
 		uint16_t newIndex;
 		DARProject* darProj;
 
@@ -584,19 +558,17 @@ namespace AnimationLoaderHook
 		// BShkbAnimationGraph object o, at o.characterInstance (offset 0xC0):
 		RE::BShkbAnimationGraph* animGraph =
 			(RE::BShkbAnimationGraph*)((uint64_t)a_context->character - 0xC0);
-		RE::Actor* tesActor = animGraph->holder;
+		RE::Actor* actor = animGraph->holder;
 
 #ifdef DEBUG_TRACE_TRAMPOLINES
 		logger::info("Original anim index = {}...", origIndex);
 #endif
 
 		if (origIndex != -1
-			&& (darProj =
-				DARGH::getDARProject(a_context->character->projectData)) != 0
-			&& tesActor
-			&& tesActor->Is(RE::FormType::ActorCharacter)
-			&& (newIndex =
-				DARGH::getNewAnimIndex(darProj, origIndex, tesActor)) != -1)
+			&& (darProj = DARGH::getDARProject(a_context->character->projectData)) != 0
+			&& actor
+			&& actor->Is(RE::FormType::ActorCharacter)
+			&& (newIndex = DARGH::getNewAnimIndex(darProj, origIndex, actor)) != -1)
 		{
 
 #ifdef DEBUG_TRACE_TRAMPOLINES
@@ -606,11 +578,11 @@ namespace AnimationLoaderHook
 			// REPLACE ANIMATION
 			// Attempt to load the replacement animation file,
 			// then, if successful, activate the clip generator.
-			a_arg3->animationBindingIndex = newIndex;
-			if (RE::AnimationFileManager_Load(a_arg1, a_context, a_arg3, a_arg4)) {
-				a_arg3->Activate(*a_context);
+			a_clipGenerator->animationBindingIndex = newIndex;
+			if (a_this->Load(*a_context, a_clipGenerator, a_arg3)) {
+				a_clipGenerator->Activate(*a_context);
 			}
-			a_arg3->animationBindingIndex = origIndex;
+			a_clipGenerator->animationBindingIndex = origIndex;
 		} else {
 
 #ifdef DEBUG_TRACE_TRAMPOLINES
@@ -620,25 +592,25 @@ namespace AnimationLoaderHook
 			// DON'T REPLACE ANIMATION
 			// Attempt to load the original animation file,
 			// then, if successful, activate the clip generator.
-			if (RE::AnimationFileManager_Load(a_arg1, a_context, a_arg3, a_arg4)) {
-				a_arg3->Activate(*a_context);
+			if (a_this->Load(*a_context, a_clipGenerator, a_arg3)) {
+				a_clipGenerator->Activate(*a_context);
 			}
 		}
 	}
 
-	bool Install()
+	static bool Install()
 	{
 		logger::info("Installing Trampoline 2: AnimationLoaderHook...");
-		REL::Relocation<std::uintptr_t> call{ RELOCATION_ID(0, 59253), 0x80 }; //TODO: SE ID
+		REL::Relocation<std::uintptr_t> call{ RELOCATION_ID(58603, 59253), 0x80 };
 
 		// Overwrite leaves one garbage byte (but shouldn't matter, as no longer accessed):
 		logger::info("  6. Overwriting the first 6 bytes with a 6 byte JMP to our trampoline...");
-		Code code{ call.address(), stl::unrestricted_cast<std::uintptr_t>(Hook)};
+		Code code{ call.address(), (std::uintptr_t)Hook };
 		code.ready();
 
-		logger::info("  1. Consider the 7 bytes at {:#x}.", call.address());                          // 0x40A42ED0
-		logger::info("  2. These are:");                                                              //   call     test     jz
-		//dumpBytes((char*)t2OverwriteCall, 7);                                                       // FF 50 10   84 C0   74 0C
+		logger::info("  1. Consider the 7 bytes at {:#x}.", call.address());                        // 0x40A42ED0
+		logger::info("  2. These are:");                                                            //   call     test     jz
+		dumpBytes((char*)call.address(), 7);                                                        // FF 50 10   84 C0   74 0C
 		logger::info("  3. Assume they decode as: 3 byte 'call', 2 byte 'test', 2 byte 'jz'.");
 		logger::info("  4. Assume the call is to 3rd VFT func for AnimationFileManagerSingleton.");
 		logger::info("     (i.e. AnimationFileManager_Load)");
@@ -654,11 +626,12 @@ namespace AnimationLoaderHook
 		//      what I'm now doing.
 
 		auto& trampoline = SKSE::GetTrampoline();
-		trampoline.write_branch<6>(call.address(), trampoline.allocate(code));
+		auto ret = trampoline.write_branch<6>(call.address(), trampoline.allocate(code));
+		logger::info("ret: {:#x}", ret);
 
 		return true;
 	}
-}
+};
 
 bool install_trampolines()
 {

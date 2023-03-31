@@ -14,4 +14,5 @@
 #include "RE/H/hkbRigidBodySetup.h"
 #include "RE/H/hkbShapeSetup.h"
 #include "RE/H/hkFinishLoadedObjectFlag.h"
+#include "RE/I/IAnimationClipLoaderSingleton.h"
 #include "RE/M/MagicTargetEx.h"
