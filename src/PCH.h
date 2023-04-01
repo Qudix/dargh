@@ -3,8 +3,6 @@
 #include <SKSE/SKSE.h>
 #include <RE/Skyrim.h>
 
-#include <ranges>
-
 #include "TSingleton.h"
 #include "RE/SkyrimEx.h"
 

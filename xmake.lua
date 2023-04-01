@@ -17,16 +17,13 @@ set_policy("package.requires_lock", true)
 add_requires("xbyak")
 add_requires("commonlibsse-ng", { configs = { skyrim_vr = false, skse_xbyak = true } })
 
--- includes
-includes("res/package.lua")
-
 -- targets
 target("dargh")
     add_packages("fmt", "spdlog", "commonlibsse-ng")
 
     add_rules("@commonlibsse-ng/plugin", {
         name = "dargh",
-        author = "noxsidereum",
+        author = "noxsidereum, Qudix",
         description = "An open source version of the Dynamic Animation Replacer for Skyrim SE"
     })
 
@@ -35,14 +32,21 @@ target("dargh")
     add_includedirs("src")
     set_pcxxheader("src/PCH.h")
 
-    add_rules("package", {
-        ["@{target}"] = {
-            archive = "@{target}-@{target_ver}.zip",
-            deploy = { "$(env SKYRIM_MODS_PATH)", "@{target}" },
-            files = {
-                { "@{target_dir}", "@{target}.dll", "@(Data)/SKSE/Plugins" },
-                { "@{target_dir}", "@{target}.pdb", "@(Data)/SKSE/Plugins" },
-                { "@{project_dir}/res", "*.ini", "@(Data)/SKSE/Plugins" },
-            }
-        }
-    })
+    after_build(function(target)
+        local copy = function(env, ext)
+            for _, env in pairs(env:split(";")) do
+                if os.exists(env) then
+                    local plugins = path.join(env, ext, "SKSE/Plugins")
+                    os.mkdir(plugins)
+                    os.trycp(target:targetfile(), plugins)
+                    os.trycp(target:symbolfile(), plugins)
+                    os.trycp("$(projectdir)/res/*.ini", plugins)
+                end
+            end
+        end
+        if os.getenv("SKYRIM_MODS_PATH") then
+            copy(os.getenv("SKYRIM_MODS_PATH"), target:name())
+        elseif os.getenv("SKYRIM_PATH") then
+            copy(os.getenv("SKYRIM_PATH"), "Data")
+        end
+    end)
