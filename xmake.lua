@@ -10,11 +10,9 @@ set_warnings("allextra", "error")
 add_rules("mode.releasedbg", "mode.debug")
 
 -- policies
-set_policy("build.ccache", false)
 set_policy("package.requires_lock", true)
 
 -- packages
-add_requires("xbyak")
 add_requires("commonlibsse-ng", { configs = { skyrim_vr = false, skse_xbyak = true } })
 
 -- targets

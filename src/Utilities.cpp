@@ -28,8 +28,6 @@
 
 #include "Utilities.h"
 
-#include <shlwapi.h>
-
 const std::string WHITESPACE = " \t";
 
 std::string trim(const std::string& s)
@@ -72,8 +70,7 @@ bool findMatchingFiles(std::string& dirToSearch,
 	                   bool filterToExt, bool recursive,
 	                   std::string ext, std::string subDir)
 {
-	HANDLE hFindFile;
-	_WIN32_FIND_DATAA FindFileData;
+	WinAPI::WIN32_FIND_DATAA FindFileData;
 	std::string str01;
 	std::string str02;
 	std::string str03;
@@ -81,16 +78,16 @@ bool findMatchingFiles(std::string& dirToSearch,
 	std::string str05;
 	std::string str06;
 
-	logger::debug("searching for: {}", dirToSearch.c_str());
+	logs::debug("searching for: {}", dirToSearch.c_str());
 
 	str04 = dirToSearch + "\\*";
-	hFindFile = FindFirstFileA(str04.c_str(), &FindFileData);
+	void* hFindFile = WinAPI::FindFirstFile(str04.c_str(), &FindFileData);
 	if (hFindFile == INVALID_HANDLE_VALUE) {
 		return false;
 	}
 
 	do {
-		if (FindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+		if (FindFileData.dwFileAttributes & WinAPI::FILE_ATTRIBUTE_DIRECTORY) {
 			if (FindFileData.cFileName[0] != '.'
 				|| FindFileData.cFileName[1]
 				&& (FindFileData.cFileName[1] != '.'
@@ -127,9 +124,9 @@ bool findMatchingFiles(std::string& dirToSearch,
 				matches_out.push_back(str01);
 			}
 		}
-	} while (FindNextFileA(hFindFile, &FindFileData));
+	} while (WinAPI::FindNextFile(hFindFile, &FindFileData));
 
-	FindClose(hFindFile);
+	static_cast<void>(WinAPI::FindClose(hFindFile));
 
 	return true;
 }

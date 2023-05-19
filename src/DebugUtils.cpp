@@ -28,7 +28,6 @@
 
 #include "DebugUtils.h"
 
-
 void dumpBytes(char* a_ptr, std::size_t a_nbytes)
 {
 	// nbytes should be a multiple of 8
@@ -36,7 +35,7 @@ void dumpBytes(char* a_ptr, std::size_t a_nbytes)
 	//    <address>:  <byte0> ... <byte7>   <asc0> ... <asc7>
 	//                             ...
 	if (!a_ptr) {
-		logger::info("a_ptr is nullptr, can't dump bytes.");
+		logs::info("a_ptr is nullptr, can't dump bytes.");
 		return;
 	}
 
@@ -59,20 +58,20 @@ void dumpBytes(char* a_ptr, std::size_t a_nbytes)
 		}
 
 		s1 += s2;
-		logger::info("{}", s1);
+		logs::info("{}", s1);
 	}
 }
 
 void dumpHkArrayStringPtr(std::string a_header, RE::hkArray<RE::hkStringPtr> a_strings)
 {
 	if (!a_strings.empty()) {
-		logger::info("{}: ({} strings)", a_header, a_strings.size());
+		logs::info("{}: ({} strings)", a_header, a_strings.size());
 		int32_t i{ 0 };
 		for (auto& str : a_strings) {
 			if (str.empty())
-				logger::info("  [{}] <NULL PTR>", i++);
+				logs::info("  [{}] <NULL PTR>", i++);
 			else
-				logger::info("  [{}] '{}'", i++, str.c_str());
+				logs::info("  [{}] '{}'", i++, str.c_str());
 		}
 	}
 }
@@ -80,10 +79,10 @@ void dumpHkArrayStringPtr(std::string a_header, RE::hkArray<RE::hkStringPtr> a_s
 void dumpHkArrayAssetBundle(std::string a_header, RE::hkArray<RE::hkbAssetBundleStringData> a_bundles)
 {
 	if (!a_bundles.empty()) {
-		logger::info("{}: ({} asset bundles)", a_header, a_bundles.size());
+		logs::info("{}: ({} asset bundles)", a_header, a_bundles.size());
 		int32_t i{ 0 };
 		for (auto& bundle : a_bundles) {
-			logger::info("  [{}] '{}'", i++, bundle.bundleName.c_str());
+			logs::info("  [{}] '{}'", i++, bundle.bundleName.c_str());
 		}
 	}
 }
@@ -91,20 +90,20 @@ void dumpHkArrayAssetBundle(std::string a_header, RE::hkArray<RE::hkbAssetBundle
 void dumpHkArrayFileNameMeshNamePair(std::string a_header, RE::hkArray<RE::hkbCharacterStringData::FileNameMeshNamePair> a_pairs)
 {
 	if (!a_pairs.empty()) {
-		logger::info("{}: ({} filename/meshname pairs)", a_header, a_pairs.size());
+		logs::info("{}: ({} filename/meshname pairs)", a_header, a_pairs.size());
 		int32_t i{ 0 };
 		for (auto& pair : a_pairs) {
-			logger::info("  [{}] ('{}', '{}')", i++, pair.fileName.c_str(), pair.meshName.c_str());
+			logs::info("  [{}] ('{}', '{}')", i++, pair.fileName.c_str(), pair.meshName.c_str());
 		}
 	}
 }
 
 void dumpHkbCharacterStringData(RE::hkbCharacterStringData* a_data)
 {
-	logger::info("\n--------------------------------------------------------------");
-	logger::info("           fctor: hkbCharacterStringData object [{}]", fmt::ptr(a_data));
-	logger::info("                         thread ID: {:08X}", WinAPI::GetCurrentThreadID());
-	logger::info("-----------------------------------------------------------------");
+	logs::info("\n--------------------------------------------------------------");
+	logs::info("           fctor: hkbCharacterStringData object [{}]", fmt::ptr(a_data));
+	logs::info("                         thread ID: {:08X}", WinAPI::GetCurrentThreadID());
+	logs::info("-----------------------------------------------------------------");
 
 	//	dumpBytes((char*)a_data, 192);
 
@@ -119,45 +118,45 @@ void dumpHkbCharacterStringData(RE::hkbCharacterStringData* a_data)
 	dumpHkArrayStringPtr("mirroredSyncPointSubstringsB", a_data->mirroredSyncPointSubstringsB);
 
 	if (!a_data->name.empty())
-		logger::info("name:             '{}'", a_data->name.c_str());
+		logs::info("name:             '{}'", a_data->name.c_str());
 
 	if (!a_data->rigName.empty())
-		logger::info("rigName:          '{}'", a_data->rigName.c_str());
+		logs::info("rigName:          '{}'", a_data->rigName.c_str());
 
 	if (!a_data->ragdollName.empty())
-		logger::info("ragdollName:      '{}'", a_data->ragdollName.c_str());
+		logs::info("ragdollName:      '{}'", a_data->ragdollName.c_str());
 
 	if (!a_data->behaviorFilename.empty())
-		logger::info("behaviorFilename: '{}'", a_data->behaviorFilename.c_str());
+		logs::info("behaviorFilename: '{}'", a_data->behaviorFilename.c_str());
 }
 
 void dumpHkbProjectData(RE::hkbProjectData* a_data)
 {
-	logger::info("\n--------------------------------------------------------------");
-	logger::info("             fctor: hkbProjectData object [{}]", fmt::ptr(a_data));
-	logger::info("                         thread ID: {:08X}", WinAPI::GetCurrentThreadID());
-	logger::info("-----------------------------------------------------------------");
+	logs::info("\n--------------------------------------------------------------");
+	logs::info("             fctor: hkbProjectData object [{}]", fmt::ptr(a_data));
+	logs::info("                         thread ID: {:08X}", WinAPI::GetCurrentThreadID());
+	logs::info("-----------------------------------------------------------------");
 
 	//dumpBytes((char*)thisObj, 1024);
 
 	auto& data = a_data->stringData;
 	if (!data->animationPath.empty())
-		logger::info("animationPath:    '{}'", data->animationPath.c_str());
+		logs::info("animationPath:    '{}'", data->animationPath.c_str());
 
 	if (!data->behaviorPath.empty())
-		logger::info("behaviorPath:     '{}'", data->behaviorPath.c_str());
+		logs::info("behaviorPath:     '{}'", data->behaviorPath.c_str());
 
 	if (!data->characterPath.empty())
-		logger::info("characterPath:    '{}'", data->characterPath.c_str());
+		logs::info("characterPath:    '{}'", data->characterPath.c_str());
 
 	if (!data->scriptsPath.empty())
-		logger::info("scriptsPath:      '{}'", data->scriptsPath.c_str());
+		logs::info("scriptsPath:      '{}'", data->scriptsPath.c_str());
 
 	if (!data->fullPathToSource.empty())
-		logger::info("fullPathToSource: '{}'", data->fullPathToSource.c_str());
+		logs::info("fullPathToSource: '{}'", data->fullPathToSource.c_str());
 
 	if (!data->rootPath.empty())
-		logger::info("rootPath:         '{}'", data->rootPath.c_str());
+		logs::info("rootPath:         '{}'", data->rootPath.c_str());
 
 	dumpHkArrayStringPtr("animationFilenames", data->animationFilenames);
 	dumpHkArrayStringPtr("behaviorFilenames", data->behaviorFilenames);
@@ -167,51 +166,51 @@ void dumpHkbProjectData(RE::hkbProjectData* a_data)
 
 void dumpHkbClipGenerator(RE::hkbClipGenerator* a_gen)
 {
-	logger::info("\n--------------------------------------------------------------");
-	logger::info("             hkbClipGenerator::Activate [{}]", fmt::ptr(a_gen));
-	logger::info("                         thread ID: {:08X}", WinAPI::GetCurrentThreadID());
-	logger::info("-----------------------------------------------------------------");
+	logs::info("\n--------------------------------------------------------------");
+	logs::info("             hkbClipGenerator::Activate [{}]", fmt::ptr(a_gen));
+	logs::info("                         thread ID: {:08X}", WinAPI::GetCurrentThreadID());
+	logs::info("-----------------------------------------------------------------");
 
-	//logger::info("flag.m_finishing = %d", flag.m_finishing);
+	//logs::info("flag.m_finishing = %d", flag.m_finishing);
 
 	if (!a_gen->name.empty())
-		logger::info("name:                         '{}'", a_gen->name.c_str());
+		logs::info("name:                         '{}'", a_gen->name.c_str());
 
-	logger::info("id:                           {}", a_gen->id);
+	logs::info("id:                           {}", a_gen->id);
 
 	if (!a_gen->animationName.empty())
-		logger::info("animationName:                '{}'", a_gen->animationName.c_str());
+		logs::info("animationName:                '{}'", a_gen->animationName.c_str());
 
 	if (!a_gen->triggers)
-		logger::info("triggers:                     {}", fmt::ptr(a_gen->triggers.get()));
+		logs::info("triggers:                     {}", fmt::ptr(a_gen->triggers.get()));
 
-	//logger::info("cropStartAmountLocalTime:     {}", a_gen->cropStartAmountLocalTime);
-	logger::info("cropEndAmountLocalTime:       {}", a_gen->cropEndAmountLocalTime);
-	logger::info("startTime:                    {}", a_gen->startTime);
-	logger::info("playbackSpeed:                {}", a_gen->playbackSpeed);
-	logger::info("enforcedDuration:             {}", a_gen->enforcedDuration);
-	logger::info("userControlledTimeFraction:   {}", a_gen->userControlledTimeFraction);
-	logger::info("animationBindingIndex:        {}", a_gen->animationBindingIndex);
+	//logs::info("cropStartAmountLocalTime:     {}", a_gen->cropStartAmountLocalTime);
+	logs::info("cropEndAmountLocalTime:       {}", a_gen->cropEndAmountLocalTime);
+	logs::info("startTime:                    {}", a_gen->startTime);
+	logs::info("playbackSpeed:                {}", a_gen->playbackSpeed);
+	logs::info("enforcedDuration:             {}", a_gen->enforcedDuration);
+	logs::info("userControlledTimeFraction:   {}", a_gen->userControlledTimeFraction);
+	logs::info("animationBindingIndex:        {}", a_gen->animationBindingIndex);
 
 	using PlaybackMode = RE::hkbClipGenerator::PlaybackMode;
 	switch (a_gen->mode.get()) {
 	case PlaybackMode::kModeSinglePlay:
-		logger::info("mode: kModeSinglePlay");
+		logs::info("mode: kModeSinglePlay");
 		break;
 	case PlaybackMode::kModeLooping:
-		logger::info("mode: kModeLooping");
+		logs::info("mode: kModeLooping");
 		break;
 	case PlaybackMode::kModeUserControlled:
-		logger::info("mode: kModeUserControlled");
+		logs::info("mode: kModeUserControlled");
 		break;
 	case PlaybackMode::kModePingPong:
-		logger::info("mode: kModePingPong");
+		logs::info("mode: kModePingPong");
 		break;
 	default:
-		logger::info("mode: Unknown");
+		logs::info("mode: Unknown");
 		break;
 	}
 
-	logger::info("flags:                  {}", a_gen->flags);
-	logger::info("Passing control back to orig function...");
+	logs::info("flags:                  {}", a_gen->flags);
+	logs::info("Passing control back to orig function...");
 }

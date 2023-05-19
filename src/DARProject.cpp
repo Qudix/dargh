@@ -80,29 +80,29 @@ namespace DARGH
 		// data item in that map (over which we iterate in order from higher
 		// priority number to lower priority), that returns a valid index.
 #ifdef DEBUG_TRACE_CONDITION_EVAL
-		logger::info("getNewAnimIndex: found potential mapping(s) for index {}", from_hkx_index);
+		logs::info("getNewAnimIndex: found potential mapping(s) for index {}", from_hkx_index);
 #endif
 		std::map<int, LinkData*, std::greater<int>> all_links = search->second;
 		for (auto& link : all_links)
 		{
 #ifdef DEBUG_TRACE_CONDITION_EVAL
-			logger::info("getNewAnimIndex: apply map with priority {}...?", link.first);
+			logs::info("getNewAnimIndex: apply map with priority {}...?", link.first);
 #endif
 			auto& link_dat = link.second;
 			to_hkx_index = link_dat->getNewAnimIndex(actor);
 			if (to_hkx_index != -1)
 			{
 #ifdef DEBUG_TRACE_CONDITION_EVAL
-				logger::info("  => yes, new anim index = {}", to_hkx_index);
+				logs::info("  => yes, new anim index = {}", to_hkx_index);
 #endif
 				return to_hkx_index;
 			}
 #ifdef DEBUG_TRACE_CONDITION_EVAL
-			logger::info("  => no");
+			logs::info("  => no");
 #endif
 		}
 #ifdef DEBUG_TRACE_CONDITION_EVAL
-		logger::info(" => no applicable mappings.");
+		logs::info(" => no applicable mappings.");
 #endif
 		return -1;
 	}
@@ -136,7 +136,7 @@ namespace DARGH
 		std::vector<std::string> modNames;
 		if (!findMatchingFiles(darDir, modNames, 0, 0, ""s, ""s))
 		{
-			logger::warn("couldn't find {}\\animations\\DynamicAnimationReplacer",
+			logs::warn("couldn't find {}\\animations\\DynamicAnimationReplacer",
 				      darProj.projFolder);
 			// No subfolders found. No mappings to load for this project.
 			return;
@@ -161,7 +161,7 @@ namespace DARGH
 			auto modinfo = dh->LookupModByName(modName.c_str());
 			if (!modinfo) {
 				// WARNING: The mod is not active. Don't load the mappings.
-				logger::warn("esp file not loaded: {}", modName);
+				logs::warn("esp file not loaded: {}", modName);
 				continue;    // Skip to the next (esp name) subfolder.
 			}
 
@@ -285,7 +285,7 @@ namespace DARGH
 					darProj.actorBaseLinks.push_back(actorBaseLink);
 
 #ifdef DEBUG_TRACE_DAR_LOADING
-					logger::info("  M1: stored link: '{}' => '{}' ({})",
+					logs::info("  M1: stored link: '{}' => '{}' ({})",
 						     actorBaseLink.from_hkx_file,
 						     actorBaseLink.to_hkx_file,
 						     actorBaseLink.actorBaseID);
@@ -417,7 +417,7 @@ namespace DARGH
 			{
 				// *** WARNING ***
 				// Can't open the conditions file.
-				logger::warn("couldn't find {}\\animations\\DynamicAnimationReplacer\\_CustomConditions\\{}\\_conditions.txt",
+				logs::warn("couldn't find {}\\animations\\DynamicAnimationReplacer\\_CustomConditions\\{}\\_conditions.txt",
 					darProj.projFolder, sPriority);
 				continue;    //  Skip to next priority subfolder.
 			}
@@ -634,7 +634,7 @@ namespace DARGH
 								// *DON'T* break... these cases actually do
 								// still get added to the conditions list,
 								// with a special flag.
-								logger::warn("esp file not loaded: {}", espName);
+								logs::warn("esp file not loaded: {}", espName);
 								bESPNotLoaded = true;
 							}
 							else
@@ -744,9 +744,9 @@ namespace DARGH
 			if (lineWithError.size() > 0)
 			{
 				// Yes. Log the error and skip this conditions file.
-				logger::error("error: {}\\animations\\DynamicAnimationReplacer\\_CustomConditions\\{}\\_conditions.txt",
+				logs::error("error: {}\\animations\\DynamicAnimationReplacer\\_CustomConditions\\{}\\_conditions.txt",
 					   darProj.projFolder, sPriority);
-				logger::error("   {}", lineWithError);
+				logs::error("   {}", lineWithError);
 				continue;    //  Skip to next priority subfolder.
 			}
 
@@ -783,7 +783,7 @@ namespace DARGH
 
 				// Debug message:
 #ifdef DEBUG_TRACE_DAR_LOADING
-				logger::info("  M2: stored link: '{}' => '{}' (priority: {})",
+				logs::info("  M2: stored link: '{}' => '{}' (priority: {})",
 					     conditionLink.from_hkx_file,
 					     conditionLink.to_hkx_file,
 					     conditionLink.priority);

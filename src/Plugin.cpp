@@ -43,7 +43,7 @@ namespace Plugin
 		// --------------------------------------------------------------------
 		const auto dh = RE::TESDataHandler::GetSingleton();
 		if (!dh) {
-			logger::error("couldn't get TESDataHandler");
+			logs::error("couldn't get TESDataHandler");
 			return;
 		}
 
@@ -59,9 +59,7 @@ namespace Plugin
 				//    [1] => 'Actors\Character\DefaultFemale.hkx'
 
 				for (auto& graph : race->behaviorGraphs) {
-					// Circumvent private inheritence, remove once commonlibsse-ng is fixed
-					auto graphCV = stl::unrestricted_cast<RE::TESModel*>(&graph);
-					if (const auto model = graphCV->GetModel()) {
+					if (const auto model = graph.GetModel()) {
 						DARGH::registerDARProject(model);
 					}
 				}

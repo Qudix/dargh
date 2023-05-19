@@ -26,14 +26,13 @@
 // (The MIT License)
 // ============================================================================
 
-#include "hooks.h"
-#include "trampolines.h"
+#include "Hooks.h"
+#include "Trampolines.h"
 #include "Plugin.h"
 #include "Utilities.h"
 
-#include "RE/Offsets.h"
-
-#include <shlwapi.h>
+#include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/sinks/msvc_sink.h>
 
 void ProcessDARINIFile()
 {
@@ -49,40 +48,38 @@ void ProcessDARINIFile()
 	// to find the value for "AnimationLimit", if it exists. No other
 	// keys are used. Given we are only interested in the one key, we
 	// instead just use GetPrivateProfileStringA.
-	GetPrivateProfileStringA("Main", "AnimationLimit", 0, value, 256, darINIPath);
+	static_cast<void>(WinAPI::GetPrivateProfileString("Main", "AnimationLimit", 0, value, 256, darINIPath));
 
 	// Print this just to be completely consistent with DAR output :-)
-	logger::info("Main");
+	logs::info("Main");
 	if (std::strcmp(value, "")) {
 		int iMaxAnimFiles = std::stoi(value, nullptr, 0);
 		if (iMaxAnimFiles >= 0) {
 			Plugin::MAX_ANIMATION_FILES = iMaxAnimFiles;
-			logger::info("  > AnimationLimit  =  {}", iMaxAnimFiles);
+			logs::info("  > AnimationLimit  =  {}", iMaxAnimFiles);
 		}
 	}
 }
 
 void InitLogger()
 {
-	auto path = logger::log_directory();
+	auto path = logs::log_directory();
 	if (!path)
 		return;
 
 	const auto plugin = SKSE::PluginDeclaration::GetSingleton();
 	*path /= fmt::format(FMT_STRING("{}.log"), plugin->GetName());
 
-	std::shared_ptr<spdlog::sinks::sink> sink;
-	if (WinAPI::IsDebuggerPresent()) {
-		sink = std::make_shared<spdlog::sinks::msvc_sink_mt>();
-	} else {
-		sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(path->string(), true);
-	}
+	std::vector<spdlog::sink_ptr> sinks{ 
+		std::make_shared<spdlog::sinks::basic_file_sink_mt>(path->string(), true), 
+		std::make_shared<spdlog::sinks::msvc_sink_mt>() 
+	};
 
-	auto log = std::make_shared<spdlog::logger>("global log"s, sink);
-	log->set_level(spdlog::level::trace);
-	log->flush_on(spdlog::level::info);
+	auto logger = std::make_shared<spdlog::logger>("global", sinks.begin(), sinks.end());
+	logger->set_level(spdlog::level::trace);
+	logger->flush_on(spdlog::level::info);
 
-	spdlog::set_default_logger(std::move(log));
+	spdlog::set_default_logger(std::move(logger));
 	spdlog::set_pattern("[%^%L%$] %v"s);
 }
 
@@ -91,21 +88,21 @@ SKSEPluginLoad(const SKSE::LoadInterface* a_skse)
 	InitLogger();
 
 	const auto plugin = SKSE::PluginDeclaration::GetSingleton();
-	logger::info("{} v{}"sv, plugin->GetName(), plugin->GetVersion());
+	logs::info("{} v{}"sv, plugin->GetName(), plugin->GetVersion());
 
 	SKSE::Init(a_skse);
 	SKSE::AllocTrampoline(1 << 7);
 
 	ProcessDARINIFile();
 
-	logger::info("Installing hooks and trampolines");
+	logs::info("Installing hooks and trampolines");
 	if (!install_hooks() || !install_trampolines())
 		return false;
 
 	auto messaging = SKSE::GetMessagingInterface();
 	messaging->RegisterListener(Plugin::HandleSKSEMessage);
 
-	logger::info("{} loaded"sv, plugin->GetName());
+	logs::info("{} loaded"sv, plugin->GetName());
 
 	return true;
 }

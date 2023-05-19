@@ -26,8 +26,8 @@
 // (The MIT License)
 // ============================================================================
 
-#include "hooks.h"
-#include "trampolines.h"
+#include "Hooks.h"
+#include "Trampolines.h"
 #include "DARProjectRegistry.h"
 #include "DARLink.h"
 #include "Plugin.h"
@@ -171,9 +171,9 @@ namespace GenAnimationHook
 		// We restore these args before calling the original function.
 		// --------------------------------------------------------------------------------
 #ifdef DEBUG_TRACE_TRAMPOLINES
-		logger::info("---------------------------------------------------------------");
-		logger::info("                      GenAnimation_Hook                        ");
-		logger::info("---------------------------------------------------------------");
+		logs::info("---------------------------------------------------------------");
+		logs::info("                      GenAnimation_Hook                        ");
+		logs::info("---------------------------------------------------------------");
 #endif
 
 		// Obtain orig arg 1, in the same way the Skyrim code does.
@@ -197,7 +197,7 @@ namespace GenAnimationHook
 					// Found the project.
 					// Get the (original) animation names array.
 #ifdef DEBUG_TRACE_TRAMPOLINES
-					logger::info("Found entry for project file '{}' in g_DARProjectRegistry.", projFilePath);
+					logs::info("Found entry for project file '{}' in g_DARProjectRegistry.", projFilePath);
 #endif
 					DARProject& darProj = it->second;
 					char** datAnimNames_Orig = (char**)hkbCharStringData_obj->animationNames._data;
@@ -251,7 +251,7 @@ namespace GenAnimationHook
 						// ------------------------------------------------------------------------------
 						uint32_t szAnimNames_New = szAnimNames_Orig + static_cast<uint32_t>(m2data_vec.size() + m1data_vec.size());
 #ifdef DEBUG_TRACE_TRAMPOLINES
-						logger::info("    => Total anim files is {} = {} orig + {} M1 remaps + {} M2 remaps",
+						logs::info("    => Total anim files is {} = {} orig + {} M1 remaps + {} M2 remaps",
 							szAnimNames_New, szAnimNames_Orig, m1data_vec.size(), m2data_vec.size());
 #endif
 						if (!darProj.animationsLoaded)
@@ -259,13 +259,13 @@ namespace GenAnimationHook
 							darProj.animationsLoaded = true;
 							if (szAnimNames_New <= Plugin::MAX_ANIMATION_FILES)
 							{
-								logger::info("{} / {} : {}",
+								logs::info("{} / {} : {}",
 									szAnimNames_New, Plugin::MAX_ANIMATION_FILES,
 									it->first.c_str());
 							}
 							else
 							{
-								logger::info("Too many animation files. {} / {} : {}",
+								logs::info("Too many animation files. {} / {} : {}",
 									szAnimNames_New, Plugin::MAX_ANIMATION_FILES,
 									it->first.c_str());
 
@@ -420,7 +420,7 @@ namespace GenAnimationHook
 										const auto [it2, success2] = oMap.insert({ priority, (LinkData*)oCLinkData });
 										if (!success2 && !g_ShownConditionError) {
 											g_ShownConditionError = true;
-											logger::error("couldn't add conditions");
+											logs::error("couldn't add conditions");
 										}
 									}
 								} // for (uint16_t i = 0; i < m2data.size(); i++)
@@ -470,7 +470,7 @@ namespace GenAnimationHook
 							// ==============================================
 							// We're done: replace the arguments with our modified version.
 #ifdef DEBUG_TRACE_TRAMPOLINES
-							logger::info("We're done! Overwriting the original mappings...");
+							logs::info("We're done! Overwriting the original mappings...");
 #endif
 							cacheModifiedCharStringData(hkbCharStringData_obj.get());
 							hkbCharStringData_obj->animationNames._data = reinterpret_cast<RE::hkbAssetBundleStringData*>(datAnimNames_New);
@@ -483,27 +483,27 @@ namespace GenAnimationHook
 		}
 
 #ifdef DEBUG_TRACE_TRAMPOLINES
-		logger::info("Calling function at {}...", fmt::ptr(GenAnimation_Orig));
+		logs::info("Calling function at {}...", fmt::ptr(GenAnimation_Orig));
 #endif
 		return GenAnimation_Orig(hkbCharStringData_obj.get(), a2, a3, a4, a5, a6, 0);
 	}
 
 	bool Install()
 	{
-		logger::info("Installing Trampoline 1: GenAnimationHook...");
+		logs::info("Installing Trampoline 1: GenAnimationHook...");
 		REL::Relocation<std::uintptr_t> unk00{ RELOCATION_ID(0, 63846), 0x101 }; //TODO: SE function seems different?
 
 		Code code{ unk00.address(), stl::unrestricted_cast<std::uintptr_t>(Hook)};
 		code.ready();
 
-		logger::info("  1. Consider the 5 bytes at {:#x}.", unk00.address());                        // 0x40B372C1
-		logger::info("  2. These are:");                                                             //     call
+		logs::info("  1. Consider the 5 bytes at {:#x}.", unk00.address());                        // 0x40B372C1
+		logs::info("  2. These are:");                                                             //     call
 		//dumpBytes((char*)t1OverwriteCall, 5);                                                      // E8 2A 70 00 00
-		logger::info("  3. Assume this is a RIP-relative call: E8 + 4 byte callee address offset.");
+		logs::info("  3. Assume this is a RIP-relative call: E8 + 4 byte callee address offset.");
 		GenAnimation_Orig = (_GenerateAnimation)((uint64_t) *(int32_t*)                              // *(0x40B372C1 + 1) + 0x40B372C1 + 5
 			(unk00.address() + 1) + unk00.address() + 5);                                            // = 0x702A + 0x40B372C1 + 5
-		logger::info("  4. Then the original callee address is {}.", fmt::ptr(GenAnimation_Orig));   // = 0x40B3E2F0
-		logger::info("  5. Overwriting the 5 bytes with a 5 byte JMP to our trampoline...");
+		logs::info("  4. Then the original callee address is {}.", fmt::ptr(GenAnimation_Orig));   // = 0x40B3E2F0
+		logs::info("  5. Overwriting the 5 bytes with a 5 byte JMP to our trampoline...");
 
 		auto& trampoline = SKSE::GetTrampoline();
 		trampoline.write_branch<5>(unk00.address(), trampoline.allocate(code));
@@ -545,9 +545,9 @@ struct AnimationLoaderHook
 		// --------------------------------------------------------------------------------
 
 #ifdef DEBUG_TRACE_TRAMPOLINES
-		logger::info("-----------------------------------------------------------------");
-		logger::info("                      AnimationLoader_Hook                       ");
-		logger::info("-----------------------------------------------------------------");
+		logs::info("-----------------------------------------------------------------");
+		logs::info("                      AnimationLoader_Hook                       ");
+		logs::info("-----------------------------------------------------------------");
 #endif
 
 		uint16_t origIndex = a_clipGenerator->animationBindingIndex;
@@ -561,7 +561,7 @@ struct AnimationLoaderHook
 		RE::Actor* actor = animGraph->holder;
 
 #ifdef DEBUG_TRACE_TRAMPOLINES
-		logger::info("Original anim index = {}...", origIndex);
+		logs::info("Original anim index = {}...", origIndex);
 #endif
 
 		if (origIndex != -1
@@ -572,7 +572,7 @@ struct AnimationLoaderHook
 		{
 
 #ifdef DEBUG_TRACE_TRAMPOLINES
-			logger::info("Replacing with index {}.", newIndex);
+			logs::info("Replacing with index {}.", newIndex);
 #endif
 
 			// REPLACE ANIMATION
@@ -586,7 +586,7 @@ struct AnimationLoaderHook
 		} else {
 
 #ifdef DEBUG_TRACE_TRAMPOLINES
-			logger::info("Not replacing.");
+			logs::info("Not replacing.");
 #endif
 
 			// DON'T REPLACE ANIMATION
@@ -600,21 +600,21 @@ struct AnimationLoaderHook
 
 	static bool Install()
 	{
-		logger::info("Installing Trampoline 2: AnimationLoaderHook...");
+		logs::info("Installing Trampoline 2: AnimationLoaderHook...");
 		REL::Relocation<std::uintptr_t> call{ RELOCATION_ID(58603, 59253), 0x80 };
 
 		// Overwrite leaves one garbage byte (but shouldn't matter, as no longer accessed):
-		logger::info("  6. Overwriting the first 6 bytes with a 6 byte JMP to our trampoline...");
+		logs::info("  6. Overwriting the first 6 bytes with a 6 byte JMP to our trampoline...");
 		Code code{ call.address(), (std::uintptr_t)Hook };
 		code.ready();
 
-		logger::info("  1. Consider the 7 bytes at {:#x}.", call.address());                        // 0x40A42ED0
-		logger::info("  2. These are:");                                                            //   call     test     jz
+		logs::info("  1. Consider the 7 bytes at {:#x}.", call.address());                        // 0x40A42ED0
+		logs::info("  2. These are:");                                                            //   call     test     jz
 		dumpBytes((char*)call.address(), 7);                                                        // FF 50 10   84 C0   74 0C
-		logger::info("  3. Assume they decode as: 3 byte 'call', 2 byte 'test', 2 byte 'jz'.");
-		logger::info("  4. Assume the call is to 3rd VFT func for AnimationFileManagerSingleton.");
-		logger::info("     (i.e. AnimationFileManager_Load)");
-		//logger::info("  5. AnimationFileManager_Load is at {:016x}.", RE::AnimationFileManager_Load);  // 0x40B40D10
+		logs::info("  3. Assume they decode as: 3 byte 'call', 2 byte 'test', 2 byte 'jz'.");
+		logs::info("  4. Assume the call is to 3rd VFT func for AnimationFileManagerSingleton.");
+		logs::info("     (i.e. AnimationFileManager_Load)");
+		//logs::info("  5. AnimationFileManager_Load is at {:016x}.", RE::AnimationFileManager_Load);  // 0x40B40D10
 		// N.B. ... We can't determine the address of the AnimationFileManager VFT
 		//      using the Plugin::g_AnimationFileManager singleton object at this time
 		//      because that object hasn't been initialised yet (for 1.6.659, its
@@ -641,7 +641,7 @@ bool install_trampolines()
 	GenAnimationHook::Install();
 	AnimationLoaderHook::Install();
 
-	logger::info("Successfully installed trampolines.");
+	logs::info("Successfully installed trampolines.");
 
 	return true;
 }

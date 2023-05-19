@@ -66,7 +66,7 @@ struct hkbCharacterStringDataHook
 		// TODO: Should we free any other memory at this point? Memory leaks?
 
 #ifdef DEBUG_TRACE_HOOKS
-		logger::info("========= HOOK 1: hkbCharacterStringData::dtor ========");
+		logs::info("========= HOOK 1: hkbCharacterStringData::dtor ========");
 #endif
 		RE::BSSpinLockGuard locker(lock);
 		const auto search = g_animHashmap.find(a_this);
@@ -82,7 +82,7 @@ struct hkbCharacterStringDataHook
 		}
 
 #ifdef DEBUG_TRACE_HOOKS
-		logger::info("Unlocking and passing control back to orig function...");
+		logs::info("Unlocking and passing control back to orig function...");
 #endif
 
 		_dtor(a_this, a_flag);
@@ -92,12 +92,12 @@ struct hkbCharacterStringDataHook
 
 	static void Install()
 	{
-		logger::info("Installing Hook 1: hkbCharacterStringData::dtor...");
+		logs::info("Installing Hook 1: hkbCharacterStringData::dtor...");
 		REL::Relocation<std::uintptr_t> vtbl{ RE::hkbCharacterStringData::VTABLE[0] };
-		logger::info("  1. Redirecting fctor VFT pointer at {:#x}.", vtbl.address());         // 0x418044a8
-		logger::info("  2. Before hooking, it points to {:#x}.", *(uint64_t*)vtbl.address()); // 0x40a3cfa0
+		logs::info("  1. Redirecting fctor VFT pointer at {:#x}.", vtbl.address());         // 0x418044a8
+		logs::info("  2. Before hooking, it points to {:#x}.", *(uint64_t*)vtbl.address()); // 0x40a3cfa0
 		_dtor = vtbl.write_vfunc(0x0, dtor);
-		logger::info("  3. After hooking, it points to {:#x}.", *(uint64_t*)vtbl.address());  // 0x31bf1bc0
+		logs::info("  3. After hooking, it points to {:#x}.", *(uint64_t*)vtbl.address());  // 0x31bf1bc0
 	}
 };
 
@@ -110,7 +110,7 @@ struct hkbProjectDataHook
 		// TODO: Should we free any other memory at this point? Memory leaks?
 
 #ifdef DEBUG_TRACE_HOOKS
-		logger::info("========= HOOK 2: hkbProjectData::dtor ========");
+		logs::info("========= HOOK 2: hkbProjectData::dtor ========");
 #endif
 
 		if (DARGH::g_isDARDataLoaded) {
@@ -123,7 +123,7 @@ struct hkbProjectDataHook
 		}
 
 #ifdef DEBUG_TRACE_HOOKS
-		logger::info("Passing control back to orig function...");
+		logs::info("Passing control back to orig function...");
 #endif
 
 		_dtor(a_this, a_flag);
@@ -133,12 +133,12 @@ struct hkbProjectDataHook
 
 	static void Install()
 	{
-		logger::info("Installing Hook 2: hkbProjectData::dtor...");
+		logs::info("Installing Hook 2: hkbProjectData::dtor...");
 		REL::Relocation<std::uintptr_t> vtbl{ RE::hkbProjectData::VTABLE[0] };
-		logger::info("  1. Redirecting fctor VFT pointer at {:#x}.", vtbl.address());         // 0x4180ac48
-		logger::info("  2. Before hooking, it points to {:#x}.", *(uint64_t*)vtbl.address()); // 0x40a5b060
+		logs::info("  1. Redirecting fctor VFT pointer at {:#x}.", vtbl.address());         // 0x4180ac48
+		logs::info("  2. Before hooking, it points to {:#x}.", *(uint64_t*)vtbl.address()); // 0x40a5b060
 		_dtor = vtbl.write_vfunc(0x0, dtor);
-		logger::info("  3. After hooking, it points to {:#x}.", *(uint64_t*)vtbl.address());  // 0x31bf1df0
+		logs::info("  3. After hooking, it points to {:#x}.", *(uint64_t*)vtbl.address());  // 0x31bf1df0
 	}
 };
 
@@ -151,7 +151,7 @@ struct hkbClipGeneratorHook
 		// it resets the animation clip to the beginning.
 
 #ifdef DEBUG_TRACE_HOOKS
-		logger::info("========= HOOK 3: hkbClipGenerator::Activate IN ========");
+		logs::info("========= HOOK 3: hkbClipGenerator::Activate IN ========");
 #endif
 
 		std::int16_t origIndex = a_this->animationBindingIndex; // CommonLibSSE offset for this member is wrong, fix it upstream (06C -> 070)
@@ -190,12 +190,12 @@ struct hkbClipGeneratorHook
 
 	static void Install()
 	{
-		logger::info("Installing Hook 3: ClipGenerator::Activate...");
+		logs::info("Installing Hook 3: ClipGenerator::Activate...");
 		REL::Relocation<std::uintptr_t> vtbl{ RE::VTABLE_hkbClipGenerator[0] };
-		logger::info("  1. Redirecting fctor VFT pointer at {:#x}.", (vtbl.address() + 0x20));         // 0x41809f18
-		logger::info("  2. Before hooking, it points to {:#x}.", *(uint64_t*)(vtbl.address() + 0x20)); // 0x40a42760
+		logs::info("  1. Redirecting fctor VFT pointer at {:#x}.", (vtbl.address() + 0x20));         // 0x41809f18
+		logs::info("  2. Before hooking, it points to {:#x}.", *(uint64_t*)(vtbl.address() + 0x20)); // 0x40a42760
 		_Activate = vtbl.write_vfunc(0x4, Activate);
-		logger::info("  3. After hooking, it points to {:#x}.", *(uint64_t*)(vtbl.address() + 0x20));  // 0x31bf1e80
+		logs::info("  3. After hooking, it points to {:#x}.", *(uint64_t*)(vtbl.address() + 0x20));  // 0x31bf1e80
 	}
 };
 
@@ -209,7 +209,7 @@ bool install_hooks()
 	hkbProjectDataHook::Install();
 	hkbClipGeneratorHook::Install();
 
-	logger::info("Successfully installed hooks.");
+	logs::info("Successfully installed hooks.");
 
 	return true;
 }

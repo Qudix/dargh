@@ -28,8 +28,6 @@
 
 #include "Conditions.h"
 
-#include <numbers>
-
 constexpr auto TWO_PI{ 2.0 * std::numbers::pi };
 
 // Turn this on if you want to trace & debug animation condition calls
@@ -296,7 +294,7 @@ bool IsEquippedRight(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args)
     // Does the actor have the specified item equipped to his right hand?
     // -------------------------------------------------------------------
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("IsEquippedRight({:08X})", a_args[0]);
+    logs::info("IsEquippedRight({:08X})", a_args[0]);
 #endif
 
     if (const auto process = a_actor->GetActorRuntimeData().currentProcess) {
@@ -316,7 +314,7 @@ bool IsEquippedRightType(RE::Actor* a_actor, std::variant<uint32_t, float>* a_ar
     // IsEquippedRightType(GlobalVariable type)
     // Is the item equipped to the actor's right hand the specified type?
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("IsEquippedRightType({:08X})", a_args[0]);
+    logs::info("IsEquippedRightType({:08X})", a_args[0]);
 #endif
 
     float arg;
@@ -338,7 +336,7 @@ bool IsEquippedRightHasKeyword(RE::Actor* a_actor, std::variant<uint32_t, float>
     // IsEquippedRightHasKeyword(Keyword keyword)
     // Does the item equipped to the actor's right hand have the specified keyword?
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("IsEquippedRightHasKeyword({:08X})", a_args[0]);
+    logs::info("IsEquippedRightHasKeyword({:08X})", a_args[0]);
 #endif
 
     if (const auto process = a_actor->GetActorRuntimeData().currentProcess) {
@@ -357,7 +355,7 @@ bool IsEquippedLeft(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args)
     // IsEquippedLeft(Form item)
     // Does the actor have the specified item equipped to his left hand?
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("IsEquippedLeft({:08X})", a_args[0]);
+    logs::info("IsEquippedLeft({:08X})", a_args[0]);
 #endif
 
     if (const auto process = a_actor->GetActorRuntimeData().currentProcess) {
@@ -377,7 +375,7 @@ bool IsEquippedLeftType(RE::Actor* a_actor, std::variant<uint32_t, float>* a_arg
     // IsEquippedLeftType(GlobalVariable type)
     // Is the item equipped to the actor's left hand the specified type?
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("IsEquippedLeftType({:08X})", a_args[0]);
+    logs::info("IsEquippedLeftType({:08X})", a_args[0]);
 #endif
 
     float arg;
@@ -399,7 +397,7 @@ bool IsEquippedLeftHasKeyword(RE::Actor* a_actor, std::variant<uint32_t, float>*
     // IsEquippedLeftHasKeyword(Keyword keyword)
     // Does the item equipped to the actor's left hand have the specified keyword?
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("IsEquippedLeftHasKeyword({:08X})", a_args[0]);
+    logs::info("IsEquippedLeftHasKeyword({:08X})", a_args[0]);
 #endif
 
     if (const auto process = a_actor->GetActorRuntimeData().currentProcess) {
@@ -418,7 +416,7 @@ bool IsEquippedShout(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args)
     // IsEquippedShout(Form shout)
     // Does the actor currently have the specified shout?
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("IsEquippedShout({:08X})", a_args[0]);
+    logs::info("IsEquippedShout({:08X})", a_args[0]);
 #endif
 
     const auto power = a_actor->GetActorRuntimeData().selectedPower;
@@ -431,7 +429,7 @@ bool IsWorn(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args, uint32_t)
     // IsWorn(Form item)
     // Is the actor wearing the specified item?
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("IsWorn({:08X})", a_args[0]);
+    logs::info("IsWorn({:08X})", a_args[0]);
 #endif 
     (void)(a_args);
 
@@ -452,7 +450,7 @@ bool IsWornHasKeyword(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args)
     // IsWornHasKeyword(Keyword keyword)
     // Is the actor wearing anything with the specified keyword?
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("IsWornHasKeyword({:08X})", a_args[0]);
+    logs::info("IsWornHasKeyword({:08X})", a_args[0]);
 #endif
 
     // Get the actor's inventory.
@@ -474,7 +472,7 @@ bool IsFemale(RE::Actor* a_actor)
     // IsFemale()
     // Is the actor female?
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("IsFemale()");
+    logs::info("IsFemale()");
 #endif
 
     const auto base = a_actor->GetActorBase();
@@ -488,7 +486,7 @@ bool Is_Child(RE::Actor* a_actor)
     // Need to name this function Is_Child rather than IsChild to avoid
     // clobbering Windows IsChild function defined in WinUser.h
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("IsChild()");
+    logs::info("IsChild()");
 #endif
 
     return a_actor->IsChild();
@@ -499,7 +497,7 @@ bool IsPlayerTeammate(RE::Actor* a_actor)
     // IsPlayerTeammate()
     // Is the actor currently a teammate of the player?
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("IsPlayerTeammate()");
+    logs::info("IsPlayerTeammate()");
 #endif
 
     return a_actor->IsPlayerTeammate();
@@ -510,7 +508,7 @@ bool IsInInterior(RE::Actor* a_actor)
     // IsInInterior()
     // Is the actor in an interior cell ?
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("IsInInterior()");
+    logs::info("IsInInterior()");
 #endif
 
     const auto cell = a_actor->GetParentCell();
@@ -522,7 +520,7 @@ bool IsInFaction(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args)
     // IsInFaction(Faction faction)
     // Is the actor in the specified faction?
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("IsInFaction({:08X})", a_args[0]);
+    logs::info("IsInFaction({:08X})", a_args[0]);
 #endif
 
     const auto formID = std::get<uint32_t>(a_args[0]);
@@ -535,7 +533,7 @@ bool HasKeyword(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args)
     // HasKeyword(Keyword keyword)
     // Does the actor have the specified keyword?
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("HasKeyword({:08X})", a_args[0]);
+    logs::info("HasKeyword({:08X})", a_args[0]);
 #endif
 
     const auto formID = std::get<uint32_t>(a_args[0]);
@@ -548,7 +546,7 @@ bool HasMagicEffect(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args)
     // HasMagicEffect(MagicEffect magiceffect)
     // Is the actor currently being affected by the given Magic Effect?
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("HasMagicEffect({:08X})", a_args[0]);
+    logs::info("HasMagicEffect({:08X})", a_args[0]);
 #endif
 
     const auto formID = std::get<uint32_t>(a_args[0]);
@@ -562,13 +560,13 @@ bool HasMagicEffectWithKeyword(RE::Actor* a_actor, std::variant<uint32_t, float>
     // HasMagicEffectWithKeyword(Keyword keyword)
     // Is the actor currently being affected by a Magic Effect with the given Keyword?
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("HasMagicEffectWithKeyword({:08X})", a_args[0]);
+    logs::info("HasMagicEffectWithKeyword({:08X})", a_args[0]);
 #endif
 
     const auto formID = std::get<uint32_t>(a_args[0]);
     const auto keyword = RE::TESForm::LookupByID<RE::BGSKeyword>(formID);
     const auto target = a_actor->GetMagicTarget();
-    return keyword && target && RE::MagicTarget_HasMagicEffectWithKeyword(target, keyword, 0);
+    return keyword && target && target->HasMagicEffectWithKeyword(keyword, 0);
 }
 
 bool HasPerk(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args)
@@ -576,7 +574,7 @@ bool HasPerk(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args)
     // HasPerk(Perk perk)
     // Does the actor have the given Perk ?
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("HasPerk({:08X})", a_args[0]);
+    logs::info("HasPerk({:08X})", a_args[0]);
 #endif
 
     const auto formID = std::get<uint32_t>(a_args[0]);
@@ -589,7 +587,7 @@ bool HasSpell(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args)
     // HasSpell(Form spell)
     // Does the actor have the given Spell or Shout?
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("HasSpell({:08X})", a_args[0]);
+    logs::info("HasSpell({:08X})", a_args[0]);
 #endif
 
     const auto formID = std::get<uint32_t>(a_args[0]);
@@ -597,7 +595,7 @@ bool HasSpell(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args)
         if (form->Is(RE::FormType::Spell))
             return a_actor->HasSpell(form->As<RE::SpellItem>());
         if (form->Is(RE::FormType::Shout))
-            return RE::Actor_HasShout(a_actor, form->As<RE::TESShout>());
+            return a_actor->HasShout(form->As<RE::TESShout>());
     }
 
     return false;
@@ -609,7 +607,7 @@ bool IsActorValueEqualTo(RE::Actor* a_actor, std::variant<uint32_t, float>* a_ar
     // Is the ActorValue of the specified ID equal to the value?
     // Temporarily disabled because it's crashing.
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("IsActorValueEqualTo({:08X}, {:08X})", a_args[0], a_args[1]);
+    logs::info("IsActorValueEqualTo({:08X}, {:08X})", a_args[0], a_args[1]);
 #endif
 
     float args[2];
@@ -627,7 +625,7 @@ bool IsActorValueLessThan(RE::Actor* a_actor, std::variant<uint32_t, float>* a_a
     // IsActorValueLessThan(GlobalVariable id, GlobalVariable value)
     // Is the ActorValue of the specified ID less than the value?
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("IsActorValueLessThan({:08X}, {:08X})", a_args[0], a_args[1]);
+    logs::info("IsActorValueLessThan({:08X}, {:08X})", a_args[0], a_args[1]);
 #endif
 
     float args[2];
@@ -645,7 +643,7 @@ bool IsActorValueBaseEqualTo(RE::Actor* a_actor, std::variant<uint32_t, float>* 
     // IsActorValueBaseEqualTo(GlobalVariable id, GlobalVariable value)
     // Is the base ActorValue of the specified ID equal to the value?
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("IsActorValueBaseEqualTo({:08X}, {:08X})", a_args[0], a_args[1]);
+    logs::info("IsActorValueBaseEqualTo({:08X}, {:08X})", a_args[0], a_args[1]);
 #endif
 
     float args[2];
@@ -663,7 +661,7 @@ bool IsActorValueBaseLessThan(RE::Actor* a_actor, std::variant<uint32_t, float>*
     // IsActorValueBaseLessThan(GlobalVariable id, GlobalVariable value)
     // Is the base ActorValue of the specified ID less than the value?
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("IsActorValueBaseLessThan({:08X}, {:08X})", args[0], args[1]);
+    logs::info("IsActorValueBaseLessThan({:08X}, {:08X})", args[0], args[1]);
 #endif
 
     float args[2];
@@ -681,7 +679,7 @@ bool IsActorValueMaxEqualTo(RE::Actor* a_actor, std::variant<uint32_t, float>* a
     // IsActorValueMaxEqualTo(GlobalVariable id, GlobalVariable value)
     // Is the max ActorValue of the specified ID equal to the value?
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("IsActorValueMaxEqualTo({:08X}, {:08X})", a_args[0], a_args[1]);
+    logs::info("IsActorValueMaxEqualTo({:08X}, {:08X})", a_args[0], a_args[1]);
 #endif
 
     float args[2];
@@ -699,7 +697,7 @@ bool IsActorValueMaxLessThan(RE::Actor* a_actor, std::variant<uint32_t, float>* 
     // IsActorValueMaxLessThan(GlobalVariable id, GlobalVariable value)
     // Is the max ActorValue of the specified ID less than the value?
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("IsActorValueMaxLessThan({:08X}, {:08X})", a_args[0], a_args[1]);
+    logs::info("IsActorValueMaxLessThan({:08X}, {:08X})", a_args[0], a_args[1]);
 #endif
 
     float args[2];
@@ -717,7 +715,7 @@ bool IsActorValuePercentageEqualTo(RE::Actor* a_actor, std::variant<uint32_t, fl
     // IsActorValuePercentageEqualTo(GlobalVariable id, GlobalVariable value)
     // Is the percentage ActorValue of the specified ID equal to the value?
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("IsActorValuePercentageEqualTo({:08X}, {:08X})", a_args[0], a_args[1]);
+    logs::info("IsActorValuePercentageEqualTo({:08X}, {:08X})", a_args[0], a_args[1]);
 #endif
 
     float args[2];
@@ -734,7 +732,7 @@ bool IsActorValuePercentageLessThan(RE::Actor* a_actor, std::variant<uint32_t, f
     // IsActorValuePercentageLessThan(GlobalVariable id, GlobalVariable value)
     // Is the percentage ActorValue of the specified ID less than the value?
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("IsActorValuePercentageLessThan({:08X}, {:08X})", a_args[0], a_args[1]);
+    logs::info("IsActorValuePercentageLessThan({:08X}, {:08X})", a_args[0], a_args[1]);
 #endif
 
     float args[2];
@@ -751,7 +749,7 @@ bool IsLevelLessThan(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args, 
     // IsLevelLessThan(GlobalVariable level)
     // Is the actor's current level less than the specified level?
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("IsLevelLessThan({:08X})", a_args[0]);
+    logs::info("IsLevelLessThan({:08X})", a_args[0]);
 #endif
 
     float arg;
@@ -768,7 +766,7 @@ bool IsActorBase(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args)
     // IsActorBase(ActorBase actorbase)
     // Is the actorbase for the actor the specified actorbase?
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("IsActorBase({:08X})", a_args[0]);
+    logs::info("IsActorBase({:08X})", a_args[0]);
 #endif
 
     const auto base = a_actor->GetActorBase();
@@ -781,7 +779,7 @@ bool IsRace(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args)
     // IsRace(Race race)
     // Is the actor's race the specified race?
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("IsRace({:08X})", a_args[0]);
+    logs::info("IsRace({:08X})", a_args[0]);
 #endif
 
     const auto race = a_actor->GetRace();
@@ -794,7 +792,7 @@ bool CurrentWeather(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args)
     // CurrentWeather(Weather weather)
     // Is the current weather the specified weather?
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("CurrentWeather({:08X})", a_args[0]);
+    logs::info("CurrentWeather({:08X})", a_args[0]);
 #endif
     (void)(a_actor);
 
@@ -815,7 +813,7 @@ bool CurrentGameTimeLessThan(RE::Actor* a_actor, std::variant<uint32_t, float>* 
     // CurrentGameTimeLessThan(GlobalVariable time)
     // Is the current game time less than the specified time?
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("CurrentGameTimeLessThan({:08X})", a_args[0]);
+    logs::info("CurrentGameTimeLessThan({:08X})", a_args[0]);
 #endif
     (void)(a_actor);
 
@@ -832,7 +830,7 @@ bool CurrentGameTimeLessThan(RE::Actor* a_actor, std::variant<uint32_t, float>* 
 
         float f = 0.0;
         const auto pctCurDayPassed = std::modff(gameDaysPassed, &f);
-        return arg > (pctCurDayPassed * RE::Calendar_GetHoursPerDay());
+        return arg > (pctCurDayPassed * calendar->GetHoursPerDay());
     }
 
     return false;
@@ -843,7 +841,7 @@ bool ValueEqualTo(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args, uin
     // ValueEqualTo(GlobalVariable value1, GlobalVariable value2)
     // Is the value1 equal to the value2?
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("ValueEqualTo({:08X}, {:08X})", a_args[0], a_args[1]);
+    logs::info("ValueEqualTo({:08X}, {:08X})", a_args[0], a_args[1]);
 #endif
     (void)(a_actor);
 
@@ -860,7 +858,7 @@ bool ValueLessThan(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args, ui
     // ValueLessThan(GlobalVariable value1, GlobalVariable value2)
     // Is the value1 less than the value2?
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("ValueLessThan({:08X}, {:08X})", a_args[0], a_args[1]);
+    logs::info("ValueLessThan({:08X}, {:08X})", a_args[0], a_args[1]);
 #endif
     (void)(a_actor);
 
@@ -877,7 +875,7 @@ bool Random(RE::Actor*, std::variant<uint32_t, float>* a_args, uint32_t a_bmArgI
     // Random(GlobalVariable percentage)
     // The probability of the specified percentage (from 0 to 1).
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("Random({:08X})", a_args[0]);
+    logs::info("Random({:08X})", a_args[0]);
 #endif
 
     float arg;
@@ -912,7 +910,7 @@ bool IsUnique(RE::Actor* a_actor)
     // IsUnique()
     // Is the actor flagged as unique?
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("IsUnique()");
+    logs::info("IsUnique()");
 #endif
 
     const auto base = a_actor->GetActorBase();
@@ -924,7 +922,7 @@ bool IsClass(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args)
     // IsClass(Class class)
     // Is the actor's class the specified class?
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("IsClass({:08X})", a_args[0]);
+    logs::info("IsClass({:08X})", a_args[0]);
 #endif
 
     if (const auto base = a_actor->GetActorBase()) {
@@ -944,7 +942,7 @@ bool IsCombatStyle(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args)
     // IsCombatStyle(CombatStyle combatStyle)
     // Is the actor's CombatStyle the specified CombatStyle?
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("IsCombatStyle({:08X})", a_args[0]);
+    logs::info("IsCombatStyle({:08X})", a_args[0]);
 #endif
 
     if (const auto base = a_actor->GetActorBase()) {
@@ -964,7 +962,7 @@ bool IsVoiceType(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args)
     // IsVoiceType(VoiceType voiceType)
     // Is the actor's VoiceType the specified VoiceType?
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("IsVoiceType({:08X})", a_args[0]);
+    logs::info("IsVoiceType({:08X})", a_args[0]);
 #endif
 
     if (const auto base = a_actor->GetActorBase()) {
@@ -984,7 +982,7 @@ bool IsAttacking(RE::Actor* a_actor)
     // IsAttacking()
     // Is the actor currently attacking?
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("IsAttacking()");
+    logs::info("IsAttacking()");
 #endif
 
     return a_actor->IsAttacking();
@@ -995,7 +993,7 @@ bool IsRunning(RE::Actor* a_actor)
     // IsRunning()
     // Is the actor currently running?
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("IsRunning()");
+    logs::info("IsRunning()");
 #endif
 
     return a_actor->IsRunning();
@@ -1006,7 +1004,7 @@ bool IsSneaking(RE::Actor* a_actor)
     // IsSneaking()
     // Is the actor currently sneaking ?
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("IsSneaking()");
+    logs::info("IsSneaking()");
 #endif
 
     return a_actor->IsSneaking();
@@ -1017,7 +1015,7 @@ bool IsSprinting(RE::Actor* a_actor)
     // IsSprinting()
     // Is the actor currently sprinting?
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("IsSprinting()");
+    logs::info("IsSprinting()");
 #endif
 
     return a_actor->AsActorState()->IsSprinting();
@@ -1028,7 +1026,7 @@ bool IsInAir(RE::Actor* a_actor)
     // IsInAir()
     // Is the actor in the air?
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("IsInAir()");
+    logs::info("IsInAir()");
 #endif
 
     return a_actor->AsActorState()->IsFlying();
@@ -1039,7 +1037,7 @@ bool IsInCombat(RE::Actor* a_actor)
     // IsInCombat()
     // Is the actor in combat?
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("IsInCombat()");
+    logs::info("IsInCombat()");
 #endif
 
     return a_actor->IsInCombat();
@@ -1050,7 +1048,7 @@ bool IsWeaponDrawn(RE::Actor* a_actor)
     // IsWeaponDrawn()
     // Does the actor have his equipped weapon and/or magic spell drawn?
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("IsWeaponDrawn()");
+    logs::info("IsWeaponDrawn()");
 #endif
 
     return a_actor->AsActorState()->IsWeaponDrawn();
@@ -1061,7 +1059,7 @@ bool IsInLocation(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args)
     // IsInLocation(Location location)
     // Is the actor in the specified location or a child of that location?
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("IsInLocation({:08X})", a_args[0]);
+    logs::info("IsInLocation({:08X})", a_args[0]);
 #endif
 
     const auto formID = std::get<uint32_t>(a_args[0]);
@@ -1082,7 +1080,7 @@ bool HasRefType(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args)
     // HasRefType(LocationRefType refType)
     // Does the actor have the specified LocationRefType attached?
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("HasRefType({:08X})", a_args[0]);
+    logs::info("HasRefType({:08X})", a_args[0]);
 #endif
 
     const auto formID = std::get<uint32_t>(a_args[0]);
@@ -1099,7 +1097,7 @@ bool IsParentCell(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args)
     // IsParentCell(Cell cell)
     // Is the actor in the specified cell?
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("IsParentCell({:08X})", a_args[0]);
+    logs::info("IsParentCell({:08X})", a_args[0]);
 #endif
 
     const auto cell = a_actor->GetParentCell();
@@ -1112,7 +1110,7 @@ bool IsWorldSpace(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args)
     // IsWorldSpace(WorldSpace worldSpace)
     // Is the actor in the specified WorldSpace?
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("IsWorldSpace({:08X})", a_args[0]);
+    logs::info("IsWorldSpace({:08X})", a_args[0]);
 #endif
     const auto worldspace = a_actor->GetWorldspace();
     const auto formID = std::get<uint32_t>(a_args[0]);
@@ -1132,7 +1130,7 @@ bool IsFactionRankEqualTo(RE::Actor* a_actor, std::variant<uint32_t, float>* a_a
     //             of this faction.)
     //      => A non-negative number equal to the actor's rank in the faction."
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("IsFactionRankEqualTo({:08X}, {:08X})", a_args[0], a_args[1]);
+    logs::info("IsFactionRankEqualTo({:08X}, {:08X})", a_args[0], a_args[1]);
 #endif
 
     float arg;
@@ -1147,7 +1145,7 @@ bool IsFactionRankEqualTo(RE::Actor* a_actor, std::variant<uint32_t, float>* a_a
     }
 
     const bool isPlayer = a_actor->IsPlayer();
-    const auto rank = RE::Actor_GetFactionRank(a_actor, faction, isPlayer);
+    const auto rank = a_actor->GetFactionRank(faction, isPlayer);
     return (static_cast<float>(rank) == arg);
 }
 
@@ -1156,7 +1154,7 @@ bool IsFactionRankLessThan(RE::Actor* a_actor, std::variant<uint32_t, float>* a_
     // IsFactionRankLessThan(GlobalVariable rank, Faction faction)
     // Is the actor's rank in the specified faction less than the specified rank?
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("IsFactionRankLessThan({:08X}, {:08X})", a_args[0], a_args[1]);
+    logs::info("IsFactionRankLessThan({:08X}, {:08X})", a_args[0], a_args[1]);
 #endif
 
     float arg;
@@ -1171,7 +1169,7 @@ bool IsFactionRankLessThan(RE::Actor* a_actor, std::variant<uint32_t, float>* a_
     }
 
     const bool isPlayer = a_actor->IsPlayer();
-    const auto rank = RE::Actor_GetFactionRank(a_actor, faction, isPlayer);
+    const auto rank = a_actor->GetFactionRank(faction, isPlayer);
     return (static_cast<float>(rank) < arg);
 }
 
@@ -1188,7 +1186,7 @@ bool IsMovementDirection(RE::Actor* a_actor, std::variant<uint32_t, float>* a_ar
     //      => 3 = Back
     //      => 4 = Left"
 #ifdef DEBUG_TRACE_CONDITIONS
-    logger::info("IsMovementDirection({:08X})", a_args[0]);
+    logs::info("IsMovementDirection({:08X})", a_args[0]);
 #endif
 
     float arg;
@@ -1197,8 +1195,8 @@ bool IsMovementDirection(RE::Actor* a_actor, std::variant<uint32_t, float>* a_ar
     }
 
     float dir = 0.0;
-    if (RE::Actor_IsMoving(a_actor)) {
-        double angle = RE::Actor_GetMoveDirectionRelativeToFacing(a_actor);
+    if (a_actor->IsMoving()) {
+        double angle = a_actor->GetMoveDirectionRelativeToFacing();
         // Ensure movement angle (in radians) is within the range [0, 2*PI]
         for (; angle < 0.0; angle += TWO_PI);
         for (; angle > TWO_PI; angle -= TWO_PI);
