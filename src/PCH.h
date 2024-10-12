@@ -5,7 +5,6 @@
 
 #include <numbers>
 
-namespace WinAPI = SKSE::WinAPI;
 namespace logs = SKSE::log;
 namespace fs = std::filesystem;
 namespace stl = SKSE::stl;

@@ -101,15 +101,15 @@ void dumpHkArrayFileNameMeshNamePair(std::string a_header, RE::hkArray<RE::hkbCh
 void dumpHkbCharacterStringData(RE::hkbCharacterStringData* a_data)
 {
 	logs::info("\n--------------------------------------------------------------");
-	logs::info("           fctor: hkbCharacterStringData object [{}]", fmt::ptr(a_data));
-	logs::info("                         thread ID: {:08X}", WinAPI::GetCurrentThreadID());
+	//logs::info("           fctor: hkbCharacterStringData object [{}]", fmt::ptr(a_data));
+	logs::info("                         thread ID: {:08X}", REX::W32::GetCurrentThreadId());
 	logs::info("-----------------------------------------------------------------");
 
 	//	dumpBytes((char*)a_data, 192);
 
 	dumpHkArrayFileNameMeshNamePair("deformableSkinNames", a_data->deformableSkinNames);
 	dumpHkArrayFileNameMeshNamePair("rigidSkinNames", a_data->rigidSkinNames);
-	dumpHkArrayAssetBundle("animationNames", a_data->animationNames);
+	//dumpHkArrayAssetBundle("animationNames", a_data->animationNames);
 	dumpHkArrayAssetBundle("animationBundleFilenameData", a_data->animationBundleFilenameData);
 	dumpHkArrayStringPtr("characterPropertyNames", a_data->characterPropertyNames);
 	dumpHkArrayStringPtr("retargetingSkeletonMapperFilenames", a_data->retargetingSkeletonMapperFilenames);
@@ -133,8 +133,8 @@ void dumpHkbCharacterStringData(RE::hkbCharacterStringData* a_data)
 void dumpHkbProjectData(RE::hkbProjectData* a_data)
 {
 	logs::info("\n--------------------------------------------------------------");
-	logs::info("             fctor: hkbProjectData object [{}]", fmt::ptr(a_data));
-	logs::info("                         thread ID: {:08X}", WinAPI::GetCurrentThreadID());
+	//logs::info("             fctor: hkbProjectData object [{}]", fmt::ptr(a_data));
+	logs::info("                         thread ID: {:08X}", REX::W32::GetCurrentThreadId());
 	logs::info("-----------------------------------------------------------------");
 
 	//dumpBytes((char*)thisObj, 1024);
@@ -167,8 +167,8 @@ void dumpHkbProjectData(RE::hkbProjectData* a_data)
 void dumpHkbClipGenerator(RE::hkbClipGenerator* a_gen)
 {
 	logs::info("\n--------------------------------------------------------------");
-	logs::info("             hkbClipGenerator::Activate [{}]", fmt::ptr(a_gen));
-	logs::info("                         thread ID: {:08X}", WinAPI::GetCurrentThreadID());
+	//logs::info("             hkbClipGenerator::Activate [{}]", fmt::ptr(a_gen));
+	logs::info("                         thread ID: {:08X}", REX::W32::GetCurrentThreadId());
 	logs::info("-----------------------------------------------------------------");
 
 	//logs::info("flag.m_finishing = %d", flag.m_finishing);
@@ -181,8 +181,8 @@ void dumpHkbClipGenerator(RE::hkbClipGenerator* a_gen)
 	if (!a_gen->animationName.empty())
 		logs::info("animationName:                '{}'", a_gen->animationName.c_str());
 
-	if (!a_gen->triggers)
-		logs::info("triggers:                     {}", fmt::ptr(a_gen->triggers.get()));
+	//if (!a_gen->triggers)
+	//	logs::info("triggers:                     {}", fmt::ptr(a_gen->triggers.get()));
 
 	//logs::info("cropStartAmountLocalTime:     {}", a_gen->cropStartAmountLocalTime);
 	logs::info("cropEndAmountLocalTime:       {}", a_gen->cropEndAmountLocalTime);

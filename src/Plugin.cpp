@@ -80,7 +80,7 @@ namespace Plugin
 		//  4. Load applicable DAR mappings for the registered projects.
 		// --------------------------------------------------------------------
 		for (auto& [path, proj] : DARGH::g_DARProjectRegistry) {
-			auto dir = fmt::format("data\\meshes\\{}\\animations\\DynamicAnimationReplacer", proj.projFolder);
+			auto dir = std::format("data\\meshes\\{}\\animations\\DynamicAnimationReplacer", proj.projFolder);
 
 			// ... i.e.
 			//     "data\meshes\actors\(project folder)\

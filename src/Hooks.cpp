@@ -47,7 +47,7 @@ uint64_t hkbClipGenerator_activate_Orig;
 typedef void (*hkbClipGenerator_activate)(RE::hkbClipGenerator*, RE::hkbContext*);
 
 RE::BSSpinLock lock;
-std::unordered_map<RE::hkbCharacterStringData*, RE::hkArray<RE::hkbAssetBundleStringData>*> g_animHashmap;
+std::unordered_map<RE::hkbCharacterStringData*, RE::hkArray<RE::hkStringPtr>*> g_animHashmap;
 
 void cacheModifiedCharStringData(RE::hkbCharacterStringData* a_hkbCharStringData)
 {

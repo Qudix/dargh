@@ -266,9 +266,8 @@ bool hasKeywordBoundObj(RE::TESBoundObject* a_obj, std::variant<uint32_t, float>
 
 float getActorValPct(RE::Actor* a_actor, uint32_t a_value)
 {
-    const auto owner = a_actor->AsActorValueOwner();
-    const float fActorValue = owner->GetActorValue(static_cast<RE::ActorValue>(a_value));
-    const float fPermActorValue = owner->GetPermanentActorValue(static_cast<RE::ActorValue>(a_value));
+    const float fActorValue = a_actor->GetActorValue(static_cast<RE::ActorValue>(a_value));
+    const float fPermActorValue = a_actor->GetPermanentActorValue(static_cast<RE::ActorValue>(a_value));
     if (fPermActorValue <= 0.0) {
         return 1.0;
     }
@@ -297,7 +296,7 @@ bool IsEquippedRight(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args)
     logs::info("IsEquippedRight({:08X})", a_args[0]);
 #endif
 
-    if (const auto process = a_actor->GetActorRuntimeData().currentProcess) {
+    if (const auto process = a_actor->currentProcess) {
         if (const auto equipped = process->GetEquippedRightHand()) {
             const auto formID = std::get<uint32_t>(a_args[0]);
             if (equipped->GetFormID() == formID) {
@@ -322,7 +321,7 @@ bool IsEquippedRightType(RE::Actor* a_actor, std::variant<uint32_t, float>* a_ar
         return false;
     }
 
-    if (const auto process = a_actor->GetActorRuntimeData().currentProcess) {
+    if (const auto process = a_actor->currentProcess) {
         if (const auto equipped = process->GetEquippedRightHand()) {
             return getEquippedFormType(equipped) == arg;
         }
@@ -339,7 +338,7 @@ bool IsEquippedRightHasKeyword(RE::Actor* a_actor, std::variant<uint32_t, float>
     logs::info("IsEquippedRightHasKeyword({:08X})", a_args[0]);
 #endif
 
-    if (const auto process = a_actor->GetActorRuntimeData().currentProcess) {
+    if (const auto process = a_actor->currentProcess) {
         if (const auto equipped = process->GetEquippedRightHand()) {
             const auto formID = std::get<uint32_t>(a_args[0]);
             const auto keyword = RE::TESForm::LookupByID<RE::BGSKeyword>(formID);
@@ -358,7 +357,7 @@ bool IsEquippedLeft(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args)
     logs::info("IsEquippedLeft({:08X})", a_args[0]);
 #endif
 
-    if (const auto process = a_actor->GetActorRuntimeData().currentProcess) {
+    if (const auto process = a_actor->currentProcess) {
         if (const auto equipped = process->GetEquippedLeftHand()) {
             const auto formID = std::get<uint32_t>(a_args[0]);
             if (equipped->GetFormID() == formID) {
@@ -383,7 +382,7 @@ bool IsEquippedLeftType(RE::Actor* a_actor, std::variant<uint32_t, float>* a_arg
         return false;
     }
 
-    if (const auto process = a_actor->GetActorRuntimeData().currentProcess) {
+    if (const auto process = a_actor->currentProcess) {
         if (const auto equipped = process->GetEquippedLeftHand()) {
             return getEquippedFormType(equipped) == arg;
         }
@@ -400,7 +399,7 @@ bool IsEquippedLeftHasKeyword(RE::Actor* a_actor, std::variant<uint32_t, float>*
     logs::info("IsEquippedLeftHasKeyword({:08X})", a_args[0]);
 #endif
 
-    if (const auto process = a_actor->GetActorRuntimeData().currentProcess) {
+    if (const auto process = a_actor->currentProcess) {
         if (const auto equipped = process->GetEquippedLeftHand()) {
             const auto formID = std::get<uint32_t>(a_args[0]);
             const auto keyword = RE::TESForm::LookupByID<RE::BGSKeyword>(formID);
@@ -419,7 +418,7 @@ bool IsEquippedShout(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args)
     logs::info("IsEquippedShout({:08X})", a_args[0]);
 #endif
 
-    const auto power = a_actor->GetActorRuntimeData().selectedPower;
+    const auto power = a_actor->selectedPower;
     const auto formID = std::get<uint32_t>(a_args[0]);
     return power && (power->GetFormID() == formID);
 }
@@ -615,8 +614,7 @@ bool IsActorValueEqualTo(RE::Actor* a_actor, std::variant<uint32_t, float>* a_ar
         return false;
     }
 
-    const auto owner = a_actor->AsActorValueOwner();
-    const auto value = owner->GetActorValue(static_cast<RE::ActorValue>(args[0]));
+    const auto value = a_actor->GetActorValue(static_cast<RE::ActorValue>(args[0]));
     return (value == args[1]);
 }
 
@@ -633,8 +631,7 @@ bool IsActorValueLessThan(RE::Actor* a_actor, std::variant<uint32_t, float>* a_a
         return false;
     }
 
-    const auto owner = a_actor->AsActorValueOwner();
-    const auto value = owner->GetActorValue(static_cast<RE::ActorValue>(args[0]));
+    const auto value = a_actor->GetActorValue(static_cast<RE::ActorValue>(args[0]));
     return (value < args[1]);
 }
 
@@ -651,8 +648,7 @@ bool IsActorValueBaseEqualTo(RE::Actor* a_actor, std::variant<uint32_t, float>* 
         return false;
     }
 
-    const auto owner = a_actor->AsActorValueOwner();
-    const auto value = owner->GetBaseActorValue(static_cast<RE::ActorValue>(args[0]));
+    const auto value = a_actor->GetBaseActorValue(static_cast<RE::ActorValue>(args[0]));
     return (value == args[1]);
 }
 
@@ -669,8 +665,7 @@ bool IsActorValueBaseLessThan(RE::Actor* a_actor, std::variant<uint32_t, float>*
         return false;
     }
 
-    const auto owner = a_actor->AsActorValueOwner();
-    const auto value = owner->GetBaseActorValue(static_cast<RE::ActorValue>(args[0]));
+    const auto value = a_actor->GetBaseActorValue(static_cast<RE::ActorValue>(args[0]));
     return (value < args[1]);
 }
 
@@ -687,8 +682,7 @@ bool IsActorValueMaxEqualTo(RE::Actor* a_actor, std::variant<uint32_t, float>* a
         return false;
     }
 
-    const auto owner = a_actor->AsActorValueOwner();
-    const auto value = owner->GetPermanentActorValue(static_cast<RE::ActorValue>(args[0]));
+    const auto value = a_actor->GetPermanentActorValue(static_cast<RE::ActorValue>(args[0]));
     return (value == args[1]);
 }
 
@@ -705,8 +699,7 @@ bool IsActorValueMaxLessThan(RE::Actor* a_actor, std::variant<uint32_t, float>* 
         return false;
     }
 
-    const auto owner = a_actor->AsActorValueOwner();
-    const auto value = owner->GetPermanentActorValue(static_cast<RE::ActorValue>(args[0]));
+    const auto value = a_actor->GetPermanentActorValue(static_cast<RE::ActorValue>(args[0]));
     return (value < args[1]);
 }
 
@@ -1018,7 +1011,7 @@ bool IsSprinting(RE::Actor* a_actor)
     logs::info("IsSprinting()");
 #endif
 
-    return a_actor->AsActorState()->IsSprinting();
+    return a_actor->IsSprinting();
 }
 
 bool IsInAir(RE::Actor* a_actor)
@@ -1029,7 +1022,7 @@ bool IsInAir(RE::Actor* a_actor)
     logs::info("IsInAir()");
 #endif
 
-    return a_actor->AsActorState()->IsFlying();
+    return a_actor->IsFlying();
 }
 
 bool IsInCombat(RE::Actor* a_actor)
@@ -1051,7 +1044,7 @@ bool IsWeaponDrawn(RE::Actor* a_actor)
     logs::info("IsWeaponDrawn()");
 #endif
 
-    return a_actor->AsActorState()->IsWeaponDrawn();
+    return a_actor->IsWeaponDrawn();
 }
 
 bool IsInLocation(RE::Actor* a_actor, std::variant<uint32_t, float>* a_args)

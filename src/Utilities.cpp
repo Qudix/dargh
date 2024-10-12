@@ -70,7 +70,7 @@ bool findMatchingFiles(std::string& dirToSearch,
 	                   bool filterToExt, bool recursive,
 	                   std::string ext, std::string subDir)
 {
-	WinAPI::WIN32_FIND_DATAA FindFileData;
+	REX::W32::WIN32_FIND_DATAA FindFileData;
 	std::string str01;
 	std::string str02;
 	std::string str03;
@@ -81,30 +81,30 @@ bool findMatchingFiles(std::string& dirToSearch,
 	logs::debug("searching for: {}", dirToSearch.c_str());
 
 	str04 = dirToSearch + "\\*";
-	void* hFindFile = WinAPI::FindFirstFile(str04.c_str(), &FindFileData);
-	if (hFindFile == INVALID_HANDLE_VALUE) {
+	void* hFindFile = REX::W32::FindFirstFileA(str04.c_str(), &FindFileData);
+	if (hFindFile == REX::W32::INVALID_HANDLE_VALUE) {
 		return false;
 	}
 
 	do {
-		if (FindFileData.dwFileAttributes & WinAPI::FILE_ATTRIBUTE_DIRECTORY) {
-			if (FindFileData.cFileName[0] != '.'
-				|| FindFileData.cFileName[1]
-				&& (FindFileData.cFileName[1] != '.'
-					|| FindFileData.cFileName[2]))
+		if (FindFileData.fileAttributes & REX::W32::FILE_ATTRIBUTE_DIRECTORY) {
+			if (FindFileData.fileName[0] != '.'
+				|| FindFileData.fileName[1]
+				&& (FindFileData.fileName[1] != '.'
+					|| FindFileData.fileName[2]))
 			{
 				if (!filterToExt) {
-					str01 = subDir + FindFileData.cFileName;
+					str01 = subDir + FindFileData.fileName;
 					matches_out.push_back(str01);
 				}
 
 				if (recursive) {
 					str05.assign(dirToSearch);
 					str05.append("\\");
-					str05.append(FindFileData.cFileName);
+					str05.append(FindFileData.fileName);
 
 					str02.assign(subDir);
-					str02.append(FindFileData.cFileName);
+					str02.append(FindFileData.fileName);
 					str02.append("\\");
 
 					str03.assign(str02);
@@ -117,16 +117,16 @@ bool findMatchingFiles(std::string& dirToSearch,
 			}
 		} else if (filterToExt) {
 			str01.assign(ext);
-			str06.assign(FindFileData.cFileName);
+			str06.assign(FindFileData.fileName);
 			if (endsWith(str06, str01))
 			{
-				str01 = subDir + FindFileData.cFileName;
+				str01 = subDir + FindFileData.fileName;
 				matches_out.push_back(str01);
 			}
 		}
-	} while (WinAPI::FindNextFile(hFindFile, &FindFileData));
+	} while (REX::W32::FindNextFileA(hFindFile, &FindFileData));
 
-	static_cast<void>(WinAPI::FindClose(hFindFile));
+	static_cast<void>(REX::W32::FindClose(hFindFile));
 
 	return true;
 }

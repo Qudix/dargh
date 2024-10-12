@@ -473,7 +473,7 @@ namespace GenAnimationHook
 							logs::info("We're done! Overwriting the original mappings...");
 #endif
 							cacheModifiedCharStringData(hkbCharStringData_obj.get());
-							hkbCharStringData_obj->animationNames._data = reinterpret_cast<RE::hkbAssetBundleStringData*>(datAnimNames_New);
+							hkbCharStringData_obj->animationNames._data = reinterpret_cast<RE::hkStringPtr*>(datAnimNames_New);
 							hkbCharStringData_obj->animationNames._size = Plugin::MAX_ANIMATION_FILES;
 							darProj.projData = projData;
 						} // if (szAnimNames_Orig < Plugin::g_MAX_ANIMATION_FILES)
@@ -502,7 +502,7 @@ namespace GenAnimationHook
 		logs::info("  3. Assume this is a RIP-relative call: E8 + 4 byte callee address offset.");
 		GenAnimation_Orig = (_GenerateAnimation)((uint64_t) *(int32_t*)                              // *(0x40B372C1 + 1) + 0x40B372C1 + 5
 			(unk00.address() + 1) + unk00.address() + 5);                                            // = 0x702A + 0x40B372C1 + 5
-		logs::info("  4. Then the original callee address is {}.", fmt::ptr(GenAnimation_Orig));   // = 0x40B3E2F0
+		//logs::info("  4. Then the original callee address is {}.", fmt::ptr(GenAnimation_Orig));   // = 0x40B3E2F0
 		logs::info("  5. Overwriting the 5 bytes with a 5 byte JMP to our trampoline...");
 
 		auto& trampoline = SKSE::GetTrampoline();
@@ -534,7 +534,7 @@ struct AnimationLoaderHook
 		}
 	};
 
-	static void Hook(RE::AnimationFileManagerSingleton* a_this, RE::hkbContext* a_context, RE::hkbClipGenerator* a_clipGenerator, uint64_t a_arg3)
+	static void Hook(RE::AnimationFileManagerSingleton* a_this, RE::hkbContext* a_context, RE::hkbClipGenerator* a_clipGenerator, RE::BSSynchronizedClipGenerator* a_arg3)
 	{
 		// --------------------------------------------------------------------------------
 		// Argument types here (unaltered from original) are:

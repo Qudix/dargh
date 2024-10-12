@@ -31,9 +31,6 @@
 #include "Plugin.h"
 #include "Utilities.h"
 
-#include <spdlog/sinks/basic_file_sink.h>
-#include <spdlog/sinks/msvc_sink.h>
-
 void ProcessDARINIFile()
 {
 	char value[256];
@@ -48,7 +45,7 @@ void ProcessDARINIFile()
 	// to find the value for "AnimationLimit", if it exists. No other
 	// keys are used. Given we are only interested in the one key, we
 	// instead just use GetPrivateProfileStringA.
-	static_cast<void>(WinAPI::GetPrivateProfileString("Main", "AnimationLimit", 0, value, 256, darINIPath));
+	static_cast<void>(REX::W32::GetPrivateProfileStringA("Main", "AnimationLimit", 0, value, 256, darINIPath));
 
 	// Print this just to be completely consistent with DAR output :-)
 	logs::info("Main");
@@ -61,37 +58,10 @@ void ProcessDARINIFile()
 	}
 }
 
-void InitLogger()
-{
-	auto path = logs::log_directory();
-	if (!path)
-		return;
-
-	const auto plugin = SKSE::PluginDeclaration::GetSingleton();
-	*path /= fmt::format(FMT_STRING("{}.log"), plugin->GetName());
-
-	std::vector<spdlog::sink_ptr> sinks{ 
-		std::make_shared<spdlog::sinks::basic_file_sink_mt>(path->string(), true), 
-		std::make_shared<spdlog::sinks::msvc_sink_mt>() 
-	};
-
-	auto logger = std::make_shared<spdlog::logger>("global", sinks.begin(), sinks.end());
-	logger->set_level(spdlog::level::trace);
-	logger->flush_on(spdlog::level::info);
-
-	spdlog::set_default_logger(std::move(logger));
-	spdlog::set_pattern("[%^%L%$] %v"s);
-}
-
 SKSEPluginLoad(const SKSE::LoadInterface* a_skse)
 {
-	InitLogger();
-
-	const auto plugin = SKSE::PluginDeclaration::GetSingleton();
-	logs::info("{} v{}"sv, plugin->GetName(), plugin->GetVersion());
-
 	SKSE::Init(a_skse);
-	SKSE::AllocTrampoline(1 << 7);
+	SKSE::AllocTrampoline(128);
 
 	ProcessDARINIFile();
 
@@ -101,8 +71,6 @@ SKSEPluginLoad(const SKSE::LoadInterface* a_skse)
 
 	auto messaging = SKSE::GetMessagingInterface();
 	messaging->RegisterListener(Plugin::HandleSKSEMessage);
-
-	logs::info("{} loaded"sv, plugin->GetName());
 
 	return true;
 }
